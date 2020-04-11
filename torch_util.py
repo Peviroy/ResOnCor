@@ -20,17 +20,17 @@ class CorelDataset(Dataset):
     ------------
     Custom implementation of pytorch's DataSet class
     '''    
-    def __init__(self, root_dir, names_file, itransforms=None):
+    def __init__(self, root_dir, names_file, transform=None):
         super().__init__()
         self.root_dir = root_dir
         self.names_file = names_file
-        self.trasforms = itransforms
+        self.trasforms = transform
         self.size = 0
         self.names_list = []
 
-        self.transforms = itransforms
-        if itransforms is None:
-            self.transforms = transforms.Compose([ transforms.Resize((256,256))
+        self.transforms = transform
+        if transform is None:
+            self.transforms = transforms.Compose([ transforms.Resize((224,224))
                                                   ,transforms.ToTensor()])
 
         if not os.path.isfile(self.names_file):
@@ -65,19 +65,18 @@ class CorelDataset(Dataset):
 
 
 
+
 if __name__ == "__main__":
     import matplotlib.pyplot as plt
     from torchvision.utils import make_grid
     train_dataset = CorelDataset('./dataset/train',
                              './dataset/train/train.txt')
-    
     # show images to make sure it works
     plt.figure()
     for cnt, i in enumerate(train_dataset):
         image = i['image']
         label = i['label']
         image = image.numpy().transpose(1, 2, 0)
-        # image = np.transpose(image, (1, 2, 0))
         ax = plt.subplot(4, 4, cnt+1)
         ax.axis('off')
         ax.imshow(image)

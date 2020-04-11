@@ -96,16 +96,19 @@ def make_namefile_file(root_dir: str):
         if os.path.exists(index_file):  
             os.remove(index_file)
         with open(index_file, 'w') as file_handle:  # create file
-            for i, class_dir in enumerate(root):  # search every subdir
+            i = -1
+            for class_dir in root:  # search every subdir
+                i+=1
                 class_root = os.path.join(root_dir, class_dir)
                 if not os.path.isdir(class_root):
+                    i -= 1
                     continue
                 class_label = class_dir # eg. beach
                 with os.scandir(class_root) as it:  # eg. 'dataset/train/beach/xxx.jpg beach'
                     for path in it:
                         if path.name.endswith('.jpg') or path.name.endswith('.png'):
-                            # path_and_label = path.path + ' ' + str(i) # ! abandon, use number as label is not a good choice
-                            path_and_label = path.path + ' ' + class_label
+                            path_and_label = path.path + ' ' + str(i) # ! abandon, use number as label is not a good choice
+#                             path_and_label = path.path + ' ' + class_label
                             file_handle.write(path_and_label)
                             file_handle.write('\n')
         
