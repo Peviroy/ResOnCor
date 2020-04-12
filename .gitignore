@@ -4,5 +4,6 @@ __pycache__/
 data/
 model/model_*
 model/net_*
+model/*
 Testfile.ipynb
 history/
