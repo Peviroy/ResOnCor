@@ -58,15 +58,8 @@ class CorelDataset(Dataset):
     def __len__(self):
         return self.size
 
-
-
-
-
-
-
-
-
-if __name__ == "__main__":
+# *unit test for dataset
+def dataset_test():
     import matplotlib.pyplot as plt
     from torchvision.utils import make_grid
     train_dataset = CorelDataset('./dataset/train',
@@ -96,3 +89,37 @@ if __name__ == "__main__":
         plt.axis('off')
         plt.show()
     plt.show()
+
+# # ------------------------------------------------------------------------------
+# from datetime import datetime
+# import visdom
+# class Visualizations:
+#     """
+#     Pytorch module visualization using visdom
+#     """
+#     def __init__(self, env_name=None):
+#         if env_name is None:
+#             env_name = str(datetime.now().strftime("%d-%m %Hh%M"))
+#         self.env_name = env_name
+#         self.vis = visdom.Visdom(env=self.env_name)
+#         self.loss_win = None
+
+#     def plot_loss(self, loss, step):
+#         self.loss_win = self.vis.line(
+#             [loss],
+#             [step],
+#             win=self.loss_win,
+#             update='append' if self.loss_win else None,
+#             opts=dict(
+#                 xlabel='Step',
+#                 ylabel='Loss',
+#                 title='Loss (mean per 10 steps)',
+#             )
+#         )
+
+
+
+
+
+if __name__ == "__main__":
+    dataset_test()

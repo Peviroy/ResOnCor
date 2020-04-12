@@ -1,16 +1,9 @@
 #-*- coding:utf-8 -*-
-'''
-@Author:Peviroy
-@Date: 2020-04-08 13:34:25
-@LastEditTime: 2020-04-08 23:01:48
-@LastEditors: Please set LastEditors
-@Description: In User Settings Edit
-@FilePath: ./Pattern/util.py
-'''
 import os
 import numpy as np
-from numpy import ndarray
 import cv2
+from numpy import ndarray
+import matplotlib.pyplot as plt
 
 def get_image_paths(directory: str) -> list:
     '''
@@ -103,15 +96,36 @@ def make_namefile_file(root_dir: str):
                 if not os.path.isdir(class_root):
                     i -= 1
                     continue
-                class_label = class_dir # eg. beach
                 with os.scandir(class_root) as it:  # eg. 'dataset/train/beach/xxx.jpg beach'
                     for path in it:
                         if path.name.endswith('.jpg') or path.name.endswith('.png'):
-                            path_and_label = path.path + ' ' + str(i) # ! abandon, use number as label is not a good choice
-#                             path_and_label = path.path + ' ' + class_label
+                            path_and_label = path.path + ' ' + str(i) 
                             file_handle.write(path_and_label)
                             file_handle.write('\n')
-        
+
+
+def draw_acc_loss(EPOCH: int, train_acc: list, train_loss: list, test_acc: list):
+    X_axis = range(0, EPOCH)
+    Y_acc = [train_acc, test_acc]
+    Y_loss = train_loss
+    
+    plt.figure()
+    plt.subplot(1, 2, 1)
+    plt.plot(X_axis, Y_acc[0], 'o-', c='blue')
+    plt.plot(X_axis, Y_acc[1], 'o-', c='green')
+    plt.title('Accuracy vs. epoches')
+    plt.ylabel('Accuracy')
+    plt.legend(['Train', 'Test'])
+    
+    plt.subplot(1, 2, 2)
+    plt.plot(X_axis, Y_loss, '.-')
+    plt.title('Test loss vs. epoches')
+    plt.ylabel('Loss')
+    
+    plt.savefig("accuracy_loss.jpg")
+    # plt.show()
+
+
 if __name__ == "__main__":
     root_dir = 'dataset'
     make_namefile_file(root_dir)
