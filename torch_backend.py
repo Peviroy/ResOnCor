@@ -2,6 +2,8 @@ import torch
 import torch.nn as nn
 import math
 
+# TODO: LR adjust function
+
 
 class BasicBlock(nn.Module):
     """
