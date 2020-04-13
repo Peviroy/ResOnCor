@@ -124,7 +124,6 @@ dataset/train/African/10.jpg 2
 dataset/train/African/57.jpg 2
 dataset/train/African/55.jpg 2
 dataset/train/African/58.jpg 2
-dataset/train/African/31.jpg 2
 dataset/train/African/51.jpg 2
 dataset/train/African/16.jpg 2
 dataset/train/African/9.jpg 2

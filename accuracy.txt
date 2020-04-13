@@ -1,5 +1,0 @@
-[Test][Epoch: 1, Accu: 4.167%
-[Test][Epoch: 2, Accu: 41.667%
-[Test][Epoch: 3, Accu: 45.833%
-[Test][Epoch: 4, Accu: 54.167%
-[Test][Epoch: 5, Accu: 83.333%

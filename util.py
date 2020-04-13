@@ -104,25 +104,25 @@ def make_namefile_file(root_dir: str):
                             file_handle.write('\n')
 
 
-def draw_acc_loss(EPOCH: int, train_acc: list, train_loss: list, test_acc: list):
+def draw_acc_loss(EPOCH: int, train_acc: list, train_loss: list, test_acc: list, savedir: str):
     X_axis = range(0, EPOCH)
     Y_acc = [train_acc, test_acc]
     Y_loss = train_loss
     
     plt.figure()
-    plt.subplot(1, 2, 1)
-    plt.plot(X_axis, Y_acc[0], 'o-', c='blue')
-    plt.plot(X_axis, Y_acc[1], 'o-', c='green')
+    plt.plot(X_axis, Y_acc[0], '.-', c='blue')
+    plt.plot(X_axis, Y_acc[1], '.-', c='green')
     plt.title('Accuracy vs. epoches')
     plt.ylabel('Accuracy')
     plt.legend(['Train', 'Test'])
+    plt.savefig(savedir + "accuracy.jpg")
     
-    plt.subplot(1, 2, 2)
+    plt.figure()
     plt.plot(X_axis, Y_loss, '.-')
-    plt.title('Test loss vs. epoches')
+    plt.title('Train loss vs. epoches')
     plt.ylabel('Loss')
+    plt.savefig(savedir + "loss.jpg")
     
-    plt.savefig("accuracy_loss.jpg")
     # plt.show()
 
 

@@ -93,7 +93,6 @@ dataset/test/African/64.jpg 2
 dataset/test/African/65.jpg 2
 dataset/test/African/80.jpg 2
 dataset/test/African/75.jpg 2
-dataset/test/African/89.jpg 2
 dataset/test/African/76.jpg 2
 dataset/test/African/87.jpg 2
 dataset/test/African/91.jpg 2
@@ -326,7 +325,6 @@ dataset/test/elephant/561.jpg 8
 dataset/test/elephant/597.jpg 8
 dataset/test/elephant/577.jpg 8
 dataset/test/elephant/566.jpg 8
-dataset/test/elephant/563.jpg 8
 dataset/test/elephant/569.jpg 8
 dataset/test/elephant/560.jpg 8
 dataset/test/elephant/579.jpg 8
