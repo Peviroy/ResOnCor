@@ -1,8 +1,14 @@
 .vscode/
 __pycache__/
 .ipynb_checkpoints/
-data/
-model/
+checkpoints/
 Testfile.ipynb
 history/
 PreTrain/
+loss.txt
+loss.jpg
+accuracy.jpg
+accuracy.txt
+data/__pycache__/
+models/__pycache__/
+utils/__pycache__/

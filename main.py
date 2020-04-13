@@ -4,27 +4,28 @@ import sys
 os.chdir(os.path.split(os.path.realpath(__file__))[0]) 
 sys.path.append(os.path.abspath(".."))
 
+# python embedded api
 import time
 import warnings 
+import argparse
 
+# pytorch api
 import torch
 import torch.nn as nn
 import torch.optim as optim
 import torchvision
 import torchvision.transforms as transforms
-
-from torch_backend import ResNet18
-from torch_util import accuracy_calc
-from torch_util import CorelDataset, AverageMeter, ProgressMeter
-
 from torch.utils.data import DataLoader
 
-import matplotlib.pyplot as plt
-from util import draw_acc_loss
 
-import argparse
+# own api
+from models import ResNet18
+from utils import accuracy_calc
+from utils import draw_acc_loss
+from data.dataset import CorelDataset
+from utils.Meter import AverageMeter, ProgressMeter
 
-device = torch.device('cuda' if torch.cuda.is_available() else 'cpu')
+
 parser = argparse.ArgumentParser(description="Resnet on CorelDataset")
 parser.add_argument('--model-folder', default='./checkpoints', help='folder to save models', dest='model_folder')
 parser.add_argument('--data', default='./dataset', help='where the data set is stored')

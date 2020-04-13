@@ -2,8 +2,8 @@ import torch
 import torch.nn as nn
 import math
 
-# TODO: LR adjust function
-
+"""Define the ResNet architecture
+"""
 
 class BasicBlock(nn.Module):
     """
@@ -82,11 +82,12 @@ class ResNet(nn.Module):
         """
         Description:
         ------------
+            Key method
             ResNet can be diveded into different layers consisting of 'Basic Blocks'
 
         Parameter:
         ------------
-            block: {Class} In resnet18 or resnet34, this blck type is called 'Basic Block'; while in resnet101, called 'Bottleneck Block'
+            block: {Class} In resnet18 or resnet34, this blck type is called 'Basic Block'; while in resnet101, called 'Bottleneck Block'(*However except for resnet18, the rest of the resnet has not been set up)
 
             in_channels: {int} Channels of previous layer's output.
 

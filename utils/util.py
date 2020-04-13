@@ -1,9 +1,12 @@
-#-*- coding:utf-8 -*-
 import os
 import numpy as np
 import cv2
 from numpy import ndarray
 import matplotlib.pyplot as plt
+
+""" Generic API
+"""
+
 
 def get_image_paths(directory: str) -> list:
     '''
@@ -105,6 +108,20 @@ def make_namefile_file(root_dir: str):
 
 
 def draw_acc_loss(EPOCH: int, train_acc: list, train_loss: list, test_acc: list, savedir: str):
+    """
+    Description: 
+    ------------
+        Draw pie according to the acc and loss;
+    
+    Output:
+    -------
+        Two pictures; 
+            One of them shows the accuracy of train and test; the other shows the loss of train
+    
+    Problems:
+    ---------
+        The output pictures is not fine grained
+    """
     X_axis = range(0, EPOCH)
     Y_acc = [train_acc, test_acc]
     Y_loss = train_loss
