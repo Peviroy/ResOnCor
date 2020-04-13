@@ -16,14 +16,14 @@
 ## Table of Contents
 
 * [About the Project](#about-the-project)
-  * [Built With](#built-with)
+  * [Directory tree](#Directory tree)
+  * [Built With](#Built With)
+  * [Requirement](#Requirement)
 * [Getting Started](#getting-started)
   * [Prerequisites](#prerequisites)
   * [Installation](#installation)
-* [Usage](#usage)
-* [Roadmap](#roadmap)
-* [Contributing](#contributing)
-* [License](#license)
+* [Training](#Training)
+* [TODO:](#TODO:)
 * [Contact](#contact)
 * [Acknowledgements](#acknowledgements)
 
@@ -43,7 +43,7 @@
 ├── data						# [python directory]Code to generate the data set
 │   ├── __init__.py
 │   └── dataset.py
-├── dataset					
+├── dataset			Built With		
 │   ├── test
 │   │   ├── African
 │   │   ├── ........
@@ -157,9 +157,7 @@ optional arguments:
 
 
 
-
-
-### TODO:
+## TODO:
 
 - [ ] Add lr decay function;
 
