@@ -24,13 +24,14 @@ from utils import accuracy_calc
 from utils import draw_acc_loss
 from data.dataset import CorelDataset
 from utils.Meter import AverageMeter, ProgressMeter
-
+from utils import adjust_learning_rate
 
 parser = argparse.ArgumentParser(description="Resnet on CorelDataset")
 parser.add_argument('--model-folder', default='./checkpoints', help='folder to save models', dest='model_folder')
+parser.add_argument('--resume', default='', type=str, help='path to latest checkpoint (default: none)')
 parser.add_argument('--data', default='./dataset', help='where the data set is stored')
 parser.add_argument('--batch', default=64, type=int, help='batch size of data input(default: 64)')
-parser.add_argument('--epoch', default='200', type=int, help='the number of cycles to train the model(default: 200)')
+parser.add_argument('--epoch', default=5, type=int, help='the number of cycles to train the model(default: 200)')
 parser.add_argument('--save', default='./', help='dir for saving document file')
 parser.add_argument('--lr', default='0.01', type=float, help='learning rate(default: 0.01)')
 parser.add_argument('--momentum', default=0.9, type=float, help='momentum(default: 0.9)')
@@ -89,7 +90,9 @@ def main_worker(device, args):
     ])
         
     transform_test = transforms.Compose([
-        transforms.Resize((224,224)),
+        transforms.Resize(256),
+        transforms.CenterCrop(224),
+        # transforms.Resize((224,224)),
         transforms.ToTensor(),
         normalize
     ])
@@ -113,8 +116,15 @@ def main_worker(device, args):
     # *create model
     model = ResNet18().to(device)
     
-    # TODO:resume frome a checkpoint 
-    
+    # TODO:resume frome a checkpoint
+    if args.resume is not None:
+        if os.path.isfile(args.resume):
+            print('loading pretrained model: {0:s}'.format(args.resume))
+            model.load_state_dict(torch.load(args.resume))    
+        else:
+            warnings.warn('No such checkpoint: {0:s}'.format(args.resume))
+            
+            
     # *loss function and optimizer
     criterion = nn.CrossEntropyLoss().to(device)
     optimizer = optim.SGD(model.parameters(), lr=LR, momentum=MOMENTUM, weight_decay=WEIGHT_DECAY)
@@ -131,6 +141,7 @@ def main_worker(device, args):
             train_accuracy_list = []
             test_accuracy_list = []
             for epoch in range(0, EPOCH):
+                adjust_learning_rate(optimizer, epoch, args)
                 # the task of outputing grogress has been completed within the train and test function
                 train_loss, train_acc1, train_logger = train(args, device, train_dataloder, model, criterion, optimizer, current_epoch=epoch)
                 acc1, test_logger = test(args, device, test_dataloder, model, criterion, optimizer, current_epoch=epoch)
