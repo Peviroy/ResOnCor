@@ -143,3 +143,7 @@ def ResNet18():
     layers = dict(
         {"dimension": [64, 128, 256, 512], "block_num": [2, 2, 2, 2]})
     return ResNet(BasicBlock, layers, num_classes=10)
+
+def ResNet34():
+    layers = dict(
+        {"dimension": [64, 128, 256, 512], "block_num": [3, 4, 6, 3]})

@@ -106,6 +106,28 @@ def make_namefile_file(root_dir: str):
                             file_handle.write(path_and_label)
                             file_handle.write('\n')
 
+def count_pic_num(root_dir: str):
+    list = []
+    root = os.listdir(root_dir)
+    if 'train' in root or 'test' in root or 'val' in root: # 递归
+        for sub_dir in root:
+            dir_name = str(sub_dir)
+            sub_dir_list = count_pic_num(os.path.join(root_dir, sub_dir))
+            list.append(dict({dir_name:sub_dir_list}))
+
+    else:
+        for class_dir in root:  # search every subdir
+            if not os.path.isdir(os.path.join(root_dir,class_dir)):
+                continue
+            class_root = os.path.join(root_dir, class_dir)
+            class_name = str(class_dir)
+            class_count = 0
+            with os.scandir(class_root) as it:  # eg. 'dataset/train/beach/xxx.jpg beach'
+                for path in it:
+                    if path.name.endswith('.jpg') or path.name.endswith('.png'):
+                        class_count+=1
+            list.append(dict({class_name:class_count}))
+    return list
 
 def draw_acc_loss(EPOCH: int, train_acc: list, train_loss: list, test_acc: list, savedir: str):
     """
@@ -144,8 +166,9 @@ def draw_acc_loss(EPOCH: int, train_acc: list, train_loss: list, test_acc: list,
 
 
 if __name__ == "__main__":
-    root_dir = 'dataset'
-    make_namefile_file(root_dir)
+    # root_dir = 'dataset'
+    # make_namefile_file(root_dir)
+    print(count_pic_num('./dataset'))
 
 
 

@@ -31,12 +31,14 @@ parser.add_argument('--model-folder', default='./checkpoints', help='folder to s
 parser.add_argument('--resume', default='', type=str, help='path to latest checkpoint (default: none)')
 parser.add_argument('--data', default='./dataset', help='where the data set is stored')
 parser.add_argument('--batch', default=64, type=int, help='batch size of data input(default: 64)')
-parser.add_argument('--epoch', default=5, type=int, help='the number of cycles to train the model(default: 200)')
+parser.add_argument('--epoch', default=100, type=int, help='the number of cycles to train the model(default: 200)')
 parser.add_argument('--save', default='./', help='dir for saving document file')
 parser.add_argument('--lr', default='0.01', type=float, help='learning rate(default: 0.01)')
 parser.add_argument('--momentum', default=0.9, type=float, help='momentum(default: 0.9)')
 parser.add_argument('--gpu', default=0, type=int, help='GPU id to use')
 parser.add_argument('--weight-decay', default=5e-4, type=float, help='weight decay (default: 5e-4)', dest='weight_decay')
+parser.add_argument('--validate', default=False, type=bool, help='validation mode')
+
 args = parser.parse_args()
 
 best_acc1 = 0 # global
@@ -77,6 +79,7 @@ def main_worker(device, args):
     LR = args.lr            # learning rate
     MOMENTUM = args.momentum
     WEIGHT_DECAY = args.weight_decay
+    print(WEIGHT_DECAY)
     
 
     # *Data loading 
@@ -90,9 +93,9 @@ def main_worker(device, args):
     ])
         
     transform_test = transforms.Compose([
-        transforms.Resize(256),
-        transforms.CenterCrop(224),
-        # transforms.Resize((224,224)),
+        # transforms.Resize(256),
+        # transforms.CenterCrop(224),
+        transforms.Resize((224,224)),
         transforms.ToTensor(),
         normalize
     ])
@@ -117,7 +120,7 @@ def main_worker(device, args):
     model = ResNet18().to(device)
     
     # TODO:resume frome a checkpoint
-    if args.resume is not None:
+    if args.resume:
         if os.path.isfile(args.resume):
             print('loading pretrained model: {0:s}'.format(args.resume))
             model.load_state_dict(torch.load(args.resume))    
@@ -132,6 +135,12 @@ def main_worker(device, args):
     # *Start traning or validate
     
     # TODO: validate mode
+    if args.validate:
+        print('Vlidate mode')
+        for epoch in range(0, 10):
+            test(args, device, test_dataloder, model, criterion, optimizer, current_epoch=epoch)
+            if epoch == 9:
+                return
     
     # if not to validate it, train it
     with open(args.save + 'accuracy.txt', 'w') as acc_f:
@@ -140,8 +149,9 @@ def main_worker(device, args):
             loss_list = [] 
             train_accuracy_list = []
             test_accuracy_list = []
-            for epoch in range(0, EPOCH):
-                adjust_learning_rate(optimizer, epoch, args)
+            for epoch in range(EPOCH):
+                print('In Train:')
+                # adjust_learning_rate(optimizer, epoch, args)
                 # the task of outputing grogress has been completed within the train and test function
                 train_loss, train_acc1, train_logger = train(args, device, train_dataloder, model, criterion, optimizer, current_epoch=epoch)
                 acc1, test_logger = test(args, device, test_dataloder, model, criterion, optimizer, current_epoch=epoch)
@@ -221,6 +231,7 @@ def train(args, device, train_dataloader, model_net, criterion, optimizer, curre
             
 def test(args, device, test_dataloader, model_net, criterion, optimizer, current_epoch=0):
     # Some tool helping measure
+    print('In Test:')
     batch_time = AverageMeter(name='Time', fmt=':6.3f') # time spent in a batch
     top1_acc = AverageMeter('Acc@1', ':6.2f') # top 1 accuracy
     top5_acc = AverageMeter('Acc@5', ':6.2f') # top 5 accuracy
