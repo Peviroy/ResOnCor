@@ -10,7 +10,6 @@
     <br />
 
 
-
 </p>
 
 ## Table of Contents
@@ -27,13 +26,19 @@
 * [Contact](#contact)
 * [Acknowledgements](#acknowledgements)
 
-
-
 ## About The Project
 
-此项目诞生于模式识别的一次作业。总的来说是以resnet18为网络骨干实现了在Corel-1000数据集上面的图像分类功能.具体的参数还有待测试
+As mentioned in the title, this project aims to solve Image classification problem on Corel-1000 dataset(you can get this in the dataset folder).
 
-诚然resnet的架设是本次的一大重点，也着实花费了相当精力去借鉴、去实现。但我们并不希望止步于此，毕竟单有网络架构以及基本的训练代码是不足以称之为一个项目的。出于易用性以及可维护性的考虑，在整体代码风格以及层次搭建上，我们花费了最多的精力，约占总体耗时的三分之二以上。
+Using ResNet18, we got an accuracy of 90.6%. while by fine-tuning official pre-trained model, we got  accuracy of 97.7% in ResNet18 and 98.2% in ResNet50;
+
+| model         | learning rate | batch size | accuracy |
+| ------------- | ------------- | ---------- | -------- |
+| ResNet18(pre) | 0.005         | 64         | 96.73%   |
+| ResNet50(pre) | 0.005         | 64         | 98.24%   |
+| ResNet18      | 0.01          | 64         | 90.7%    |
+
+The architecture of the network is the core, but since there are so many open source codes, we are not just satisfied with reproducing network architecture. Instead, we expect to build a robust and maintainable system. Therefore this project was born.
 
 ### Directory tree
 
@@ -43,7 +48,7 @@
 ├── data						# [python directory]Code to generate the data set
 │   ├── __init__.py
 │   └── dataset.py
-├── dataset			Built With		
+├── dataset			
 │   ├── test
 │   │   ├── African
 │   │   ├── ........
@@ -55,13 +60,15 @@
 ├── models						# [python directory]model defination
 │   ├── __init__.py
 │   └── Resnet.py
-└── utils						# [python directory]utility
+├── utils						# [python directory]utility
 │   ├── __init__.py
 │   ├── util.py					
 │   ├── torch_util.py
 │   └── Meter.py				# Special dashboard for recording network output.
+├── Result						# Result display
 ├── __init__.py
 ├── main.py						# entry file
+├── grad_cam.py					
 └── requirement.txt
 ```
 
@@ -92,7 +99,39 @@ torch==1.4.0
 Pillow==7.1.1
 ```
 
+### Some Result
 
+#### Test mode
+
+* resnet18_90.7
+
+  ![image-20200415205024966](./Result/resmet18_90.png)
+
+* resnet18_96.7
+
+  ![image-20200415204055523](./Result/resnet18_96.png)
+
+* resnet50_98.2
+
+  ![image-20200415204344731](./Result/resnet50_98.png)
+
+#### Validation mode
+
+<img src="./Result/validationmode.png" alt="image-20200416001514013" style="zoom: 50%;" />
+
+#### Trainning mode
+
+* loss curve of resnet18_90.7 : loss--0.04
+
+<img src="./Result/loss.jpg" style="zoom:50%;" />
+
+#### Hotmap
+
+Using CAM, we can get the attention of the network;
+
+While we did not unify the CAM method into the project.As fo how to use CAM method, you can view the github link inside the grad_cam file.
+
+![](./Result/Hotmap/18_elephant590.jpg)
 
 ## Getting Started
 
@@ -121,6 +160,8 @@ pip install -r requirements
 
 ## Training
 
+#### Default 
+
 To train a model, run `main.py` :
 
 ```
@@ -129,14 +170,45 @@ python main.py
 
 The default learning rate schedule starts at 0.01. This may be somewhat lower than usaual, but can converge steadily.
 
+#### Using specific gpu
+
+```
+python main.py --gpu=k
+```
+
+#### Using pretrained model
+
+```
+python main.py --resume='</path/to/model>' #if use official pre-trained model, \
+											call --official-pre insted
+```
+
+#### Validation mode | Test mode
+
+Default mode is train mode, but validation mode and test mode are available
+
+```
+python main.py --validate=True
+python main.py --test=True
+```
+
+
+
+#### Other parameter
+
+We provide interface for determining hyper parameter such as batch size, learning rate, weight-decay, and so no.
+
 For more augment infomation, call `--help`:
 
 ```bash
-python main.py --help            
-
-usage: main.py [-h] [--model-folder MODEL_FOLDER] [--data DATA]
-               [--batch BATCH] [--epoch EPOCH] [--save SAVE] [--lr LR]
-               [--momentum MOMENTUM] [--gpu GPU] [--weight-decay WEIGHT_DECAY]
+$python main.py --help
+usage: main.py [-h] [--model-folder MODEL_FOLDER] [--resume RESUME]
+               [--official-pre OFFICIAL] [--class-num CLASS_NUM]
+               [--pre-epoch PRE_EPOCH] [--data DATA] [--batch BATCH]
+               [--epoch EPOCH] [--save SAVE] [--lr LR]
+               [--lr-decay-step LR_DECAY_STEP] [--momentum MOMENTUM]
+               [--weight-decay WEIGHT_DECAY] [--gpu GPU] [--validate VALIDATE]
+               [--test TEST] [--model MODEL]
 
 Resnet on CorelDataset
 
@@ -144,26 +216,36 @@ optional arguments:
   -h, --help            show this help message and exit
   --model-folder MODEL_FOLDER
                         folder to save models
+  --resume RESUME       path to latest checkpoint
+  --official-pre OFFICIAL
+                        path to official pre-trained model
+  --class-num CLASS_NUM
+                        number of classes classified
+  --pre-epoch PRE_EPOCH
+                        previous epoch (default: none)
   --data DATA           where the data set is stored
   --batch BATCH         batch size of data input(default: 64)
   --epoch EPOCH         the number of cycles to train the model(default: 200)
   --save SAVE           dir for saving document file
   --lr LR               learning rate(default: 0.01)
+  --lr-decay-step LR_DECAY_STEP
+                        lr decayed by 10 every step
   --momentum MOMENTUM   momentum(default: 0.9)
-  --gpu GPU             GPU id to use
   --weight-decay WEIGHT_DECAY
                         weight decay (default: 5e-4)
+  --gpu GPU             GPU id to use(default: 0)
+  --validate VALIDATE   validation mode
+  --test TEST           test only mode
+  --model MODEL         resnet18、resnet34、resnet50，etc
 ```
-
-
 
 ## TODO:
 
-- [ ] Add lr decay function;
+- [x] Add lr decay function;
 
-- [ ] Pre-train mode
+- [x] Pre-train mode
 
-- [ ] Validation mode
+- [x] Validation mode
 - [ ] CNN visualization
 
 ## Contact
@@ -171,8 +253,6 @@ optional arguments:
 - [email](https://twitter.com/twitter_handle) - peviroy@outlook.com
 
 Project Link: [https://github.com/Peviroy/ResOnCor](https://github.com/Peviroy/ResOnCor)
-
-
 
 ## Acknowledgements
 

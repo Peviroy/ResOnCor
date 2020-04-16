@@ -1,3 +1,4 @@
+# thanks to Caoliangjie:https://github.com/Caoliangjie/pytorch-gradcam-resnet50
 from models import resnet
 import torch
 from torch.autograd import Variable
