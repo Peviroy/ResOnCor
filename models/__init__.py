@@ -1,1 +1,1 @@
-from .Resnet import ResNet18
+from .Resnet import resnet
