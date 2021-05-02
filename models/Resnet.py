@@ -86,7 +86,7 @@ class Bottleneck(nn.Module):
 
 
 class ResNet(nn.Module):
-    def __init__(self, block, layers: list, num_classes=10):
+    def __init__(self, block, layers: list):
         super(ResNet, self).__init__()
         self.in_channels = 64
 
@@ -104,12 +104,6 @@ class ResNet(nn.Module):
         self.layer2 = self._make_layer(block, 128, layers[1], stride=2) # size / 8
         self.layer3 = self._make_layer(block, 256, layers[2], stride=2) # size / 16
         self.layer4 = self._make_layer(block, 512, layers[3], stride=2) # size / 32
-
-        # output size of conv layer is (7, 7) using a avgpool with kernel size of 7 can get an output of size 1
-        self.avgpool = nn.AvgPool2d(7, stride=1)
-        # self.avgpool = nn.AdaptiveAvgPool2d((1, 1))
-        # concluded: dimension of final conv layer equal (expansion*512), where expansion means last block channel / first block channel (each layer is same)
-        self.fc = nn.Linear(512 * block.expansion, num_classes)
 
         for module in self.modules():
             if isinstance(module, nn.Conv2d):
@@ -167,28 +161,34 @@ class ResNet(nn.Module):
         out = self.layer3(out)
         out = self.layer4(out)
 
-        out = self.avgpool(out)
-        out = out.view(out.size(0), -1)
-        out = self.fc(out)
-
         return out
 
 
-def ResNet18(classes_num):
-    return ResNet(BasicBlock, [2, 2, 2, 2], num_classes=classes_num)
+def ResNet18():
+    return ResNet(BasicBlock, [2, 2, 2, 2])
 
 
-def ResNet34(classes_num):
-    return ResNet(BasicBlock, [3, 4, 6, 3], num_classes=classes_num)
+def ResNet34():
+    return ResNet(BasicBlock, [3, 4, 6, 3])
 
 
-def ResNet50(classes_num):
-    return ResNet(Bottleneck, [3, 4, 6, 3], num_classes=classes_num)
+def ResNet50():
+    return ResNet(Bottleneck, [3, 4, 6, 3])
 
 
-def resnet(model: str, classes_num):
-    switch = {'resnet18': ResNet18, 'resnet34': ResNet34, 'resnet50': ResNet50}
-    if model.lower() in switch:
-        return switch[model](classes_num)
-    else:
-        print('No model selected!')
+def ResNet101():
+    return ResNet(Bottleneck, [3, 4, 23, 3])
+
+
+def resnet(name: str):
+    models = {
+        'resnet18': ResNet18,
+        'resnet34': ResNet34,
+        'resnet50': ResNet50,
+        'resnet101': ResNet101
+    }
+
+    if name.lower() not in models:
+        raise ValueError(f'No such model!\n\t{name.lower()}')
+    model = models[name]()
+    return model
