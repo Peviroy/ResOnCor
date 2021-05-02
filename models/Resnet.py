@@ -1,6 +1,5 @@
 import torch.nn as nn
 import math
-
 """Define the ResNet architecture
 """
 
@@ -15,19 +14,27 @@ class BasicBlock(nn.Module):
 
     def __init__(self, in_channels, out_channels, stride=1, downsample=None):
         super(BasicBlock, self).__init__()
-        self.conv1 = nn.Conv2d(
-            in_channels, out_channels, kernel_size=3, stride=stride, padding=1, bias=False)
+        self.conv1 = nn.Conv2d(in_channels,
+                               out_channels,
+                               kernel_size=3,
+                               stride=stride,
+                               padding=1,
+                               bias=False)
         self.bn1 = nn.BatchNorm2d(out_channels)
         # replace original value,which can save memory
         self.relu = nn.ReLU(inplace=True)
-        self.conv2 = nn.Conv2d(out_channels, out_channels,
-                               kernel_size=3, stride=1, padding=1, bias=False)
+        self.conv2 = nn.Conv2d(out_channels,
+                               out_channels,
+                               kernel_size=3,
+                               stride=1,
+                               padding=1,
+                               bias=False)
         self.bn2 = nn.BatchNorm2d(out_channels)
 
         self.downsample = downsample
 
     def forward(self, x):
-        residule = x  # keep original input as residule part
+        residule = x # keep original input as residule part
         out = self.conv1(x)
         out = self.relu(self.bn1(out))
 
@@ -49,8 +56,7 @@ class Bottleneck(nn.Module):
         super(Bottleneck, self).__init__()
         self.conv1 = nn.Conv2d(inplanes, planes, kernel_size=1, bias=False)
         self.bn1 = nn.BatchNorm2d(planes)
-        self.conv2 = nn.Conv2d(planes, planes, kernel_size=3, stride=stride,
-                               padding=1, bias=False)
+        self.conv2 = nn.Conv2d(planes, planes, kernel_size=3, stride=stride, padding=1, bias=False)
         self.bn2 = nn.BatchNorm2d(planes)
         self.conv3 = nn.Conv2d(planes, planes * 4, kernel_size=1, bias=False)
         self.bn3 = nn.BatchNorm2d(planes * 4)
@@ -85,21 +91,32 @@ class ResNet(nn.Module):
         super(ResNet, self).__init__()
         self.in_channels = 64
 
-        self.conv1 = nn.Conv2d(in_channels=3, out_channels=64,
-                               kernel_size=7, stride=2, padding=3, bias=False)  # size / 2
+        self.conv1 = nn.Conv2d(in_channels=3,
+                               out_channels=64,
+                               kernel_size=7,
+                               stride=2,
+                               padding=3,
+                               bias=False) # size / 2
         self.bn1 = nn.BatchNorm2d(64)
         self.relu = nn.ReLU(inplace=True)
-        self.maxpool = nn.MaxPool2d(
-            kernel_size=3, stride=2, padding=1)  # size / 4
+        self.maxpool = nn.MaxPool2d(kernel_size=3, stride=2, padding=1) # size / 4
 
-        self.layer1 = self._make_layer(
-            block, layers["dimension"][0], layers["block_num"][0], stride=1)  # size / 4
-        self.layer2 = self._make_layer(
-            block, layers["dimension"][1], layers["block_num"][1], stride=2)  # size / 8
-        self.layer3 = self._make_layer(
-            block, layers["dimension"][2], layers["block_num"][2], stride=2)  # size / 16
-        self.layer4 = self._make_layer(
-            block, layers["dimension"][3], layers["block_num"][3], stride=2)  # size / 32
+        self.layer1 = self._make_layer(block,
+                                       layers["dimension"][0],
+                                       layers["block_num"][0],
+                                       stride=1) # size / 4
+        self.layer2 = self._make_layer(block,
+                                       layers["dimension"][1],
+                                       layers["block_num"][1],
+                                       stride=2) # size / 8
+        self.layer3 = self._make_layer(block,
+                                       layers["dimension"][2],
+                                       layers["block_num"][2],
+                                       stride=2) # size / 16
+        self.layer4 = self._make_layer(block,
+                                       layers["dimension"][3],
+                                       layers["block_num"][3],
+                                       stride=2) # size / 32
 
         # output size of conv layer is (7, 7) using a avgpool with kernel size of 7 can get an output of size 1
         self.avgpool = nn.AvgPool2d(7, stride=1)
@@ -145,10 +162,11 @@ class ResNet(nn.Module):
         downsample = None
         if stride != 1 or self.in_channels != channels * block.expansion:
             downsample = nn.Sequential(
-                nn.Conv2d(self.in_channels, block.expansion*channels,
-                          kernel_size=1, stride=stride, bias=False),
-                nn.BatchNorm2d(channels * block.expansion)
-            )
+                nn.Conv2d(self.in_channels,
+                          block.expansion * channels,
+                          kernel_size=1,
+                          stride=stride,
+                          bias=False), nn.BatchNorm2d(channels * block.expansion))
 
         layers = []
         layers.append(block(self.in_channels, channels, stride, downsample))
@@ -177,28 +195,23 @@ class ResNet(nn.Module):
 
 
 def ResNet18(classes_num):
-    layers = dict(
-        {"dimension": [64, 128, 256, 512], "block_num": [2, 2, 2, 2]})
+    layers = dict({"dimension": [64, 128, 256, 512], "block_num": [2, 2, 2, 2]})
     return ResNet(BasicBlock, layers, num_classes=classes_num)
 
 
 def ResNet34(classes_num):
-    layers = dict(
-        {"dimension": [64, 128, 256, 512], "block_num": [3, 4, 6, 3]})
+    layers = dict({"dimension": [64, 128, 256, 512], "block_num": [3, 4, 6, 3]})
     return ResNet(BasicBlock, layers, num_classes=classes_num)
 
 
 def ResNet50(classes_num):
-    layers = dict(
-        {"dimension": [64, 128, 256, 512], "block_num": [3, 4, 6, 3]})
+    layers = dict({"dimension": [64, 128, 256, 512], "block_num": [3, 4, 6, 3]})
     return ResNet(Bottleneck, layers, num_classes=classes_num)
 
 
 def resnet(model: str, classes_num):
     model = model.lower()
-    switch = {'resnet18': ResNet18,
-              'resnet34': ResNet34,
-              'resnet50': ResNet50}
+    switch = {'resnet18': ResNet18, 'resnet34': ResNet34, 'resnet50': ResNet50}
     if model in switch:
         return switch[model](classes_num)
     else:

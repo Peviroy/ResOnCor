@@ -19,43 +19,53 @@ import sys
 os.chdir(os.path.split(os.path.realpath(__file__))[0])
 sys.path.append(os.path.abspath(".."))
 
-
 parser = argparse.ArgumentParser(description="Resnet on CorelDataset")
-parser.add_argument('--model-folder', default='./checkpoints',
-                    help='folder to save models', dest='model_folder')
-parser.add_argument('--resume', default='', type=str,
-                    help='path to latest checkpoint')
-parser.add_argument('--official-pre', default='', type=str,
-                    help='path to official pre-trained model', dest='official')
-parser.add_argument('--class-num', default=10, type=int,
-                    help='number of classes classified', dest='class_num')
-parser.add_argument('--pre-epoch', default=0, type=int,
-                    help='previous epoch (default: none)', dest='pre_epoch')
-parser.add_argument('--data', default='./dataset',
-                    help='where the data set is stored')
-parser.add_argument('--batch', default=64, type=int,
-                    help='batch size of data input(default: 64)')
-parser.add_argument('--epoch', default=100, type=int,
+parser.add_argument('--model-folder',
+                    default='./checkpoints',
+                    help='folder to save models',
+                    dest='model_folder')
+parser.add_argument('--resume', default='', type=str, help='path to latest checkpoint')
+parser.add_argument('--official-pre',
+                    default='',
+                    type=str,
+                    help='path to official pre-trained model',
+                    dest='official')
+parser.add_argument('--class-num',
+                    default=10,
+                    type=int,
+                    help='number of classes classified',
+                    dest='class_num')
+parser.add_argument('--pre-epoch',
+                    default=0,
+                    type=int,
+                    help='previous epoch (default: none)',
+                    dest='pre_epoch')
+parser.add_argument('--data', default='./dataset', help='where the data set is stored')
+parser.add_argument('--batch', default=64, type=int, help='batch size of data input(default: 64)')
+parser.add_argument('--epoch',
+                    default=100,
+                    type=int,
                     help='the number of cycles to train the model(default: 200)')
-parser.add_argument('--save', default='./',
-                    help='dir for saving document file')
-parser.add_argument('--lr', default='0.01', type=float,
-                    help='learning rate(default: 0.01)')
-parser.add_argument('--lr-decay-step', default='200', type=int,
-                    help='lr decayed by 10 every step', dest='lr_decay_step')
-parser.add_argument('--momentum', default=0.9, type=float,
-                    help='momentum(default: 0.9)')
-parser.add_argument('--weight-decay', default=5e-4, type=float,
-                    help='weight decay (default: 5e-4)', dest='weight_decay')
+parser.add_argument('--save', default='./', help='dir for saving document file')
+parser.add_argument('--lr', default='0.01', type=float, help='learning rate(default: 0.01)')
+parser.add_argument('--lr-decay-step',
+                    default='200',
+                    type=int,
+                    help='lr decayed by 10 every step',
+                    dest='lr_decay_step')
+parser.add_argument('--momentum', default=0.9, type=float, help='momentum(default: 0.9)')
+parser.add_argument('--weight-decay',
+                    default=5e-4,
+                    type=float,
+                    help='weight decay (default: 5e-4)',
+                    dest='weight_decay')
 parser.add_argument('--gpu', default=0, type=int, help='GPU id to use')
-parser.add_argument('--validate', default=False,
-                    type=bool, help='validation mode')
+parser.add_argument('--validate', default=False, type=bool, help='validation mode')
 parser.add_argument('--test', default=False, type=bool, help='test only mode')
-parser.add_argument('--model', default='resnet18', type=str,
-                    help='resnet18、resnet34、resnet50，etc')
+parser.add_argument('--model', default='resnet18', type=str, help='resnet18、resnet34、resnet50，etc')
 args = parser.parse_args()
 
-best_acc1 = 0  # global
+best_acc1 = 0 # global
 
 
 def main():
@@ -77,27 +87,26 @@ def main():
         warnings.warn('No GPU is not found. Use CPU')
         device = torch.device('cpu')
     else:
-        print('Using gpu: {0} in device: {1}'.format(
-            args.gpu, torch.cuda.get_device_name()))
+        print('Using gpu: {0} in device: {1}'.format(args.gpu, torch.cuda.get_device_name()))
         device = torch.device('cuda', args.gpu)
     main_worker(device, args)
 
 
 def main_worker(device, args):
-    global best_acc1  # global
+    global best_acc1 # global
 
     # *Hpyer argument
     EPOCH = args.epoch
     PRE_EPOCH = args.pre_epoch
     BATCH_SIZE = args.batch
-    LR = args.lr            # learning rate
+    LR = args.lr # learning rate
     MOMENTUM = args.momentum
     WEIGHT_DECAY = args.weight_decay
 
     # *Data loading
     # normalize = transforms.Normalize(mean=[0.485, 0.456, 0.406], std=[0.229, 0.224, 0.225]) # imagenet normalize
     normalize_list = [(0.4914, 0.4822, 0.4465), (0.2023, 0.1994, 0.2010)]
-    normalize = transforms.Normalize(*normalize_list)  # cifar10 normalize
+    normalize = transforms.Normalize(*normalize_list) # cifar10 normalize
     transform_train = transforms.Compose([
         transforms.RandomResizedCrop(224),
         transforms.RandomHorizontalFlip(),
@@ -117,21 +126,15 @@ def main_worker(device, args):
     train_dataset = CorelDataset('./dataset/train',
                                  './dataset/train/train.txt',
                                  transform=transform_train)
-    train_dataloader = DataLoader(train_dataset,
-                                  batch_size=BATCH_SIZE,
-                                  shuffle=True,
-                                  num_workers=4)
+    train_dataloader = DataLoader(train_dataset, batch_size=BATCH_SIZE, shuffle=True, num_workers=4)
 
     test_dataset = CorelDataset('./dataset/test',
                                 './dataset/test/test.txt',
                                 transform=transform_test)
-    test_dataloader = DataLoader(test_dataset,
-                                 batch_size=BATCH_SIZE,
-                                 shuffle=False,
-                                 num_workers=4)
+    test_dataloader = DataLoader(test_dataset, batch_size=BATCH_SIZE, shuffle=False, num_workers=4)
 
     # *create model
-    if args.official:   # official model's architecture is different
+    if args.official: # official model's architecture is different
         # official model classify 1000 classes
         model = resnet(args.model, 1000)
         # load
@@ -155,20 +158,17 @@ def main_worker(device, args):
 
     # *loss function and optimizer
     criterion = nn.CrossEntropyLoss().to(device)
-    optimizer = optim.SGD(model.parameters(), lr=LR,
-                          momentum=MOMENTUM, weight_decay=WEIGHT_DECAY)
+    optimizer = optim.SGD(model.parameters(), lr=LR, momentum=MOMENTUM, weight_decay=WEIGHT_DECAY)
 
     # *Start traning or validate
 
     # validate mode: show image with its label and prediction
     if args.validate:
         # shuffle
-        test_dataloader = DataLoader(test_dataset,
-                                     batch_size=4,
-                                     shuffle=True)
+        test_dataloader = DataLoader(test_dataset, batch_size=4, shuffle=True)
         view_predicted(test_dataloader, model, device, normalization=normalize_list)
         return
-    
+
     # test mode: get the accuracy of the model on test dataset
     elif args.test:
         print('Test mode')
@@ -184,18 +184,26 @@ def main_worker(device, args):
             test_accuracy_list = []
             for epoch in range(PRE_EPOCH, EPOCH):
                 print('In Train:')
-                adjust_learning_rate(optimizer, epoch, original_lr=args.lr, decay_step=args.lr_decay_step)
+                adjust_learning_rate(optimizer,
+                                     epoch,
+                                     original_lr=args.lr,
+                                     decay_step=args.lr_decay_step)
                 # the task of outputing grogress has been completed within the train and test function
-                train_loss, train_acc1, train_logger = train(
-                    args, device, train_dataloader, model, criterion, optimizer, current_epoch=epoch)
-                acc1, test_logger = test(
-                    args, device, test_dataloader, model, current_epoch=epoch)
+                train_loss, train_acc1, train_logger = train(args,
+                                                             device,
+                                                             train_dataloader,
+                                                             model,
+                                                             criterion,
+                                                             optimizer,
+                                                             current_epoch=epoch)
+                acc1, test_logger = test(args, device, test_dataloader, model, current_epoch=epoch)
                 # remember best acc@1 and save checkpoint
-                if (acc1 > best_acc1) | ((epoch+1) % 10 == 0):
+                if (acc1 > best_acc1) | ((epoch + 1) % 10 == 0):
                     best_acc1 = max(acc1, best_acc1)
-                    print('Saving model in epoch: {0:d}'.format(epoch+1))
-                    torch.save(model.state_dict(
-                    ), '{0:s}/model_{1:03d}_{2:.3f}'.format(args.model_folder, epoch+1, acc1))
+                    print('Saving model in epoch: {0:d}'.format(epoch + 1))
+                    torch.save(
+                        model.state_dict(),
+                        '{0:s}/model_{1:03d}_{2:.3f}'.format(args.model_folder, epoch + 1, acc1))
 
                 loss_list.append(train_loss)
                 train_accuracy_list.append(train_acc1)
@@ -210,12 +218,15 @@ def main_worker(device, args):
                 acc_f.flush()
 
     # Epoch finished.
-    draw_acc_loss(PRE_EPOCH, EPOCH, train_acc=train_accuracy_list,
-                  train_loss=loss_list, test_acc=test_accuracy_list, savedir=args.save)
+    draw_acc_loss(PRE_EPOCH,
+                  EPOCH,
+                  train_acc=train_accuracy_list,
+                  train_loss=loss_list,
+                  test_acc=test_accuracy_list,
+                  savedir=args.save)
 
     print('Saving Final model in epoch')
-    torch.save(model.state_dict(),
-               '{0:s}/model_final'.format(args.model_folder))
+    torch.save(model.state_dict(), '{0:s}/model_final'.format(args.model_folder))
     print("Training Finish")
 
 
@@ -223,22 +234,21 @@ def train(args, device, train_dataloader, model_net, criterion, optimizer, curre
 
     batch_time = AverageMeter(name='Time', fmt=':6.3f')
     losses = AverageMeter('Loss', ':.4e')
-    top1_acc = AverageMeter('Acc@1', ':6.2f')  # top 1 accuracy
-    top5_acc = AverageMeter('Acc@5', ':6.2f')  # top 5 accuracy
-    progress = ProgressMeter(   # log
-        len(train_dataloader),
-        [batch_time, losses, top1_acc, top5_acc],
-        prefix="[Train] Epoch: [{}]".format(current_epoch+1))
+    top1_acc = AverageMeter('Acc@1', ':6.2f') # top 1 accuracy
+    top5_acc = AverageMeter('Acc@5', ':6.2f') # top 5 accuracy
+    progress = ProgressMeter( # log
+        len(train_dataloader), [batch_time, losses, top1_acc, top5_acc],
+        prefix="[Train] Epoch: [{}]".format(current_epoch + 1))
 
     # train mode
     model_net.train()
 
     end = time.time()
+    batch_cnt = 0
     for batch_cnt, batch_data in enumerate(train_dataloader):
         # move into specific device
         image_batch, label_batch = batch_data['image'], batch_data['label']
-        image_batch, label_batch = image_batch.to(
-            device), label_batch.to(device)
+        image_batch, label_batch = image_batch.to(device), label_batch.to(device)
 
         # output
         outputs = model_net(image_batch)
@@ -263,8 +273,8 @@ def train(args, device, train_dataloader, model_net, criterion, optimizer, curre
         end = time.time()
 
         # display
-        progress.display(batch_cnt+1)
-    return losses.avg, top1_acc.avg.item(), progress.get(batch_cnt+1)
+        progress.display(batch_cnt + 1)
+    return losses.avg, top1_acc.avg.item(), progress.get(batch_cnt + 1)
 
 
 def test(args, device, test_dataloader, model_net, current_epoch=0):
@@ -272,20 +282,19 @@ def test(args, device, test_dataloader, model_net, current_epoch=0):
     print('In Test:')
     # time spent in a batch
     batch_time = AverageMeter(name='Time', fmt=':6.3f')
-    top1_acc = AverageMeter('Acc@1', ':6.2f')  # top 1 accuracy
-    top5_acc = AverageMeter('Acc@5', ':6.2f')  # top 5 accuracy
-    progress = ProgressMeter(   # log
-        len(test_dataloader),
-        [batch_time, top1_acc, top5_acc],
-        prefix="[Test] Epoch: [{}]".format(current_epoch+1))
+    top1_acc = AverageMeter('Acc@1', ':6.2f') # top 1 accuracy
+    top5_acc = AverageMeter('Acc@5', ':6.2f') # top 5 accuracy
+    progress = ProgressMeter( # log
+        len(test_dataloader), [batch_time, top1_acc, top5_acc],
+        prefix="[Test] Epoch: [{}]".format(current_epoch + 1))
 
     model_net.eval()
+    batch_cnt = 0
     with torch.no_grad():
         end = time.time()
         for batch_cnt, batch_data in enumerate(test_dataloader):
             image_batch, label_batch = batch_data['image'], batch_data['label']
-            image_batch, label_batch = image_batch.to(
-                device), label_batch.to(device)
+            image_batch, label_batch = image_batch.to(device), label_batch.to(device)
 
             outputs = model_net(image_batch)
 
@@ -299,9 +308,9 @@ def test(args, device, test_dataloader, model_net, current_epoch=0):
             end = time.time()
 
             # display
-            progress.display(batch_cnt+1)
+            progress.display(batch_cnt + 1)
 
-    return top1_acc.avg.item(), progress.get(batch_cnt+1)
+    return top1_acc.avg.item(), progress.get(batch_cnt + 1)
 
 
 if __name__ == '__main__':

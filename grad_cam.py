@@ -13,7 +13,6 @@ import argparse
 class FeatureExtractor():
     """ Class for extracting activations and 
     registering gradients from targetted intermediate layers """
-
     def __init__(self, model, target_layers):
         self.model = model
         self.target_layers = target_layers
@@ -27,7 +26,7 @@ class FeatureExtractor():
         self.gradients = []
         for name, module in self.model._modules.items():
             print('name=', name)
-            
+
             x = module(x)
             print('x.size()=', x.size())
             if name in self.target_layers:
@@ -42,7 +41,6 @@ class ModelOutputs():
     1. The network output.
     2. Activations from intermeddiate targetted layers.
     3. Gradients from intermeddiate targetted layers. """
-
     def __init__(self, model, target_layers):
         self.model = model
         self.feature_extractor = FeatureExtractor(self.model, target_layers)
@@ -76,7 +74,7 @@ def preprocess_image(img):
 
 
 def show_cam_on_image(img, mask):
-    heatmap = cv2.applyColorMap(np.uint8(255*mask), cv2.COLORMAP_JET)
+    heatmap = cv2.applyColorMap(np.uint8(255 * mask), cv2.COLORMAP_JET)
     heatmap = np.float32(heatmap) / 255
     cam = heatmap + np.float32(img)
     cam = cam / np.max(cam)
@@ -136,11 +134,9 @@ class GradCam:
 
 
 class GuidedBackpropReLU(Function):
-
     def forward(self, input):
         positive_mask = (input > 0).type_as(input)
-        output = torch.addcmul(torch.zeros(
-            input.size()).type_as(input), input, positive_mask)
+        output = torch.addcmul(torch.zeros(input.size()).type_as(input), input, positive_mask)
         self.save_for_backward(input, output)
         return output
 
@@ -150,8 +146,10 @@ class GuidedBackpropReLU(Function):
 
         positive_mask_1 = (input > 0).type_as(grad_output)
         positive_mask_2 = (grad_output > 0).type_as(grad_output)
-        grad_input = torch.addcmul(torch.zeros(input.size()).type_as(input), torch.addcmul(
-            torch.zeros(input.size()).type_as(input), grad_output, positive_mask_1), positive_mask_2)
+        grad_input = torch.addcmul(
+            torch.zeros(input.size()).type_as(input),
+            torch.addcmul(torch.zeros(input.size()).type_as(input), grad_output, positive_mask_1),
+            positive_mask_2)
 
         return grad_input
 
@@ -201,9 +199,13 @@ class GuidedBackpropReLUModel:
 
 def get_args():
     parser = argparse.ArgumentParser()
-    parser.add_argument('--use-cuda', action='store_true', default=False,
+    parser.add_argument('--use-cuda',
+                        action='store_true',
+                        default=False,
                         help='Use NVIDIA GPU acceleration')
-    parser.add_argument('--image-path', type=str, default='./examples/naicha.jpg',
+    parser.add_argument('--image-path',
+                        type=str,
+                        default='./examples/naicha.jpg',
                         help='Input image path')
     args = parser.parse_args()
     args.use_cuda = args.use_cuda and torch.cuda.is_available()
@@ -229,15 +231,13 @@ if __name__ == '__main__':
     # feature method, and a classifier method,
     # as in the VGG models in torchvision.
     model = resnet('resnet50', 10)
-    print('loading pretrained model: {0:s}'.format(
-        './PreTrain/resnet50_98.2'))
+    print('loading pretrained model: {0:s}'.format('./PreTrain/resnet50_98.2'))
     model.load_state_dict(torch.load('./PreTrain/resnet50_98.2'))
     global model2
     model2 = resnet('resnet50', 10)
     model2.load_state_dict(torch.load('./PreTrain/resnet50_98.2'))
     del model.fc
-    grad_cam = GradCam(model=model,
-                       target_layer_names=["layer4"], use_cuda=args.use_cuda)
+    grad_cam = GradCam(model=model, target_layer_names=["layer4"], use_cuda=args.use_cuda)
 
     img = cv2.imread(args.image_path, 1)
     img = np.float32(cv2.resize(img, (224, 224))) / 255
