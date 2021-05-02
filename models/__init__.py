@@ -1,1 +1,0 @@
-from .Resnet import resnet
