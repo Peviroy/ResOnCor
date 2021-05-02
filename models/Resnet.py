@@ -1,7 +1,6 @@
+"""Define the ResNet architecture"""
 import torch.nn as nn
 import math
-"""Define the ResNet architecture
-"""
 
 
 class BasicBlock(nn.Module):
@@ -58,8 +57,8 @@ class Bottleneck(nn.Module):
         self.bn1 = nn.BatchNorm2d(planes)
         self.conv2 = nn.Conv2d(planes, planes, kernel_size=3, stride=stride, padding=1, bias=False)
         self.bn2 = nn.BatchNorm2d(planes)
-        self.conv3 = nn.Conv2d(planes, planes * 4, kernel_size=1, bias=False)
-        self.bn3 = nn.BatchNorm2d(planes * 4)
+        self.conv3 = nn.Conv2d(planes, planes * self.expansion, kernel_size=1, bias=False)
+        self.bn3 = nn.BatchNorm2d(planes * self.expansion)
         self.relu = nn.ReLU(inplace=True)
         self.downsample = downsample
         self.stride = stride
@@ -87,7 +86,7 @@ class Bottleneck(nn.Module):
 
 
 class ResNet(nn.Module):
-    def __init__(self, block, layers: dict, num_classes=10):
+    def __init__(self, block, layers: list, num_classes=10):
         super(ResNet, self).__init__()
         self.in_channels = 64
 
@@ -101,22 +100,10 @@ class ResNet(nn.Module):
         self.relu = nn.ReLU(inplace=True)
         self.maxpool = nn.MaxPool2d(kernel_size=3, stride=2, padding=1) # size / 4
 
-        self.layer1 = self._make_layer(block,
-                                       layers["dimension"][0],
-                                       layers["block_num"][0],
-                                       stride=1) # size / 4
-        self.layer2 = self._make_layer(block,
-                                       layers["dimension"][1],
-                                       layers["block_num"][1],
-                                       stride=2) # size / 8
-        self.layer3 = self._make_layer(block,
-                                       layers["dimension"][2],
-                                       layers["block_num"][2],
-                                       stride=2) # size / 16
-        self.layer4 = self._make_layer(block,
-                                       layers["dimension"][3],
-                                       layers["block_num"][3],
-                                       stride=2) # size / 32
+        self.layer1 = self._make_layer(block, 64, layers[0], stride=1) # size / 4
+        self.layer2 = self._make_layer(block, 128, layers[1], stride=2) # size / 8
+        self.layer3 = self._make_layer(block, 256, layers[2], stride=2) # size / 16
+        self.layer4 = self._make_layer(block, 512, layers[3], stride=2) # size / 32
 
         # output size of conv layer is (7, 7) using a avgpool with kernel size of 7 can get an output of size 1
         self.avgpool = nn.AvgPool2d(7, stride=1)
@@ -132,7 +119,7 @@ class ResNet(nn.Module):
                 module.weight.data.fill_(1)
                 module.bias.data.zero_()
 
-    def _make_layer(self, block, channels, block_num, stride):
+    def _make_layer(self, block, planes, block_num, stride):
         """
         Description:
         ------------
@@ -141,39 +128,32 @@ class ResNet(nn.Module):
 
         Parameter:
         ------------
-            block: {Class} In resnet18 or resnet34, this blck type is called 'Basic Block'; while in resnet101, called 'Bottleneck Block'(*However except for resnet18, the rest of the resnet has not been set up)
-
-            in_channels: {int} Channels of previous layer's output.
-
+            block: {Class} In resnet18 or resnet34, this blck type is called 'Basic Block'; while in resnet101, called 'Bottleneck Block'
+            in_channels: {int} Channels of previous layer's output
+            planes: {int} planes of blocks
             block_num: {int} Number of block
-
             stride: {int} stride function is executed by the first block of each layer
 
-        Note:
-        -----
-            The names of 'channels' and 'self.in_channels' are somehow confusing;
-            We define channels as the previous layer's output channel, 'in_channels' as the previous block's output channel
         """
-        # dimension dismatch(will be happened in the first block of each layer, so we add downsample layer)
-        # 简言之:第一个块要同上一层的输出进行衔接，这表现在维度的转换。所以需要降采样进行升维；
-        #       而之后的块其输入输出维度是一致的，所以不需要进行改变， 因此使用for循环统一处理
-        #
+        # dimension dismatch(will be happened in the first block of each layer, so we add downsample layer) used to serve residual part
+
         # *FIRST BLOCK -------------------
         downsample = None
-        if stride != 1 or self.in_channels != channels * block.expansion:
+        expanded_output = planes * block.expansion
+        if stride != 1 or self.in_channels != expanded_output:
             downsample = nn.Sequential(
                 nn.Conv2d(self.in_channels,
-                          block.expansion * channels,
+                          expanded_output,
                           kernel_size=1,
                           stride=stride,
-                          bias=False), nn.BatchNorm2d(channels * block.expansion))
+                          bias=False), nn.BatchNorm2d(expanded_output))
 
         layers = []
-        layers.append(block(self.in_channels, channels, stride, downsample))
+        layers.append(block(self.in_channels, planes, stride, downsample))
         # *OTHER BLOCKS -------------------
-        self.in_channels = channels * block.expansion
-        for i in range(1, block_num):
-            layers.append(block(self.in_channels, channels))
+        self.in_channels = expanded_output
+        for _ in range(1, block_num):
+            layers.append(block(self.in_channels, planes))
 
         return nn.Sequential(*layers)
 
@@ -195,24 +175,20 @@ class ResNet(nn.Module):
 
 
 def ResNet18(classes_num):
-    layers = dict({"dimension": [64, 128, 256, 512], "block_num": [2, 2, 2, 2]})
-    return ResNet(BasicBlock, layers, num_classes=classes_num)
+    return ResNet(BasicBlock, [2, 2, 2, 2], num_classes=classes_num)
 
 
 def ResNet34(classes_num):
-    layers = dict({"dimension": [64, 128, 256, 512], "block_num": [3, 4, 6, 3]})
-    return ResNet(BasicBlock, layers, num_classes=classes_num)
+    return ResNet(BasicBlock, [3, 4, 6, 3], num_classes=classes_num)
 
 
 def ResNet50(classes_num):
-    layers = dict({"dimension": [64, 128, 256, 512], "block_num": [3, 4, 6, 3]})
-    return ResNet(Bottleneck, layers, num_classes=classes_num)
+    return ResNet(Bottleneck, [3, 4, 6, 3], num_classes=classes_num)
 
 
 def resnet(model: str, classes_num):
-    model = model.lower()
     switch = {'resnet18': ResNet18, 'resnet34': ResNet34, 'resnet50': ResNet50}
-    if model in switch:
+    if model.lower() in switch:
         return switch[model](classes_num)
     else:
         print('No model selected!')
