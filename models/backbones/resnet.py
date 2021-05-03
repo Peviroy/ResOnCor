@@ -1,6 +1,7 @@
 """Define the ResNet architecture"""
 import torch.nn as nn
 import math
+import torch.utils.model_zoo as model_zoo
 
 
 class BasicBlock(nn.Module):
@@ -180,7 +181,7 @@ def ResNet101():
     return ResNet(Bottleneck, [3, 4, 23, 3])
 
 
-def resnet(name: str):
+def resnet(name: str, pretrained=False):
     models = {
         'resnet18': ResNet18,
         'resnet34': ResNet34,
@@ -188,7 +189,17 @@ def resnet(name: str):
         'resnet101': ResNet101
     }
 
+    model_urls = {
+        'resnet18': 'https://download.pytorch.org/models/resnet18-5c106cde.pth',
+        'resnet34': 'https://download.pytorch.org/models/resnet34-333f7ec4.pth',
+        'resnet50': 'https://download.pytorch.org/models/resnet50-19c8e357.pth',
+        'resnet101': 'https://download.pytorch.org/models/resnet101-5d3b4d8f.pth',
+        'resnet152': 'https://download.pytorch.org/models/resnet152-b121ed2d.pth',
+    }
+
     if name.lower() not in models:
         raise ValueError(f'No such model!\n\t{name.lower()}')
     model = models[name]()
+    if pretrained:
+        model.load_state_dict(model_zoo.load_url(model_urls[name.lower()]))
     return model
