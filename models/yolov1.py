@@ -3,7 +3,7 @@ import torch
 import torch.nn as nn
 
 from .backbones import resnet
-from ..nn import SpatialPyramidPool2d, Conv2d
+from nn import SpatialPyramidPool2d, Conv2d
 
 
 class myYOLO(nn.Module):
@@ -30,7 +30,7 @@ class myYOLO(nn.Module):
         self.neck = SpatialPyramidPool2d(in_channels=backbones_out_channels,
                                          out_channels=backbones_out_channels,
                                          k=(5, 9, 13))
-        self.head = nn.Sequential(Conv2d(backbones_out_channels, 256, k=1),
+        self.head = nn.Sequential(Conv2d(backbones_out_channels, 256, k_size=1),
                                   Conv2d(256, 512, k_size=3, padding=1), Conv2d(512, 256, k_size=1),
                                   Conv2d(256, 512, k_size=3, padding=1))
 
