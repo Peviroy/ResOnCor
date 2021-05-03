@@ -1,11 +1,12 @@
+"""Custom implementation of pytorch's DataSet class
+"""
+# TODO: add dataset_downloading scripts
 from torch.utils.data import DataLoader, Dataset
 from torchvision import transforms
 
 from PIL import Image
 
 import os
-"""Custom implementation of pytorch's DataSet class
-"""
 
 
 class CorelDataset(Dataset):
