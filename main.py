@@ -3,10 +3,10 @@ import warnings
 from utils.torch_util import view_predicted
 from utils import adjust_learning_rate
 from utils.Meter import AverageMeter, ProgressMeter
-from data.dataset import CorelDataset
+from data.corel import CorelDataset
 from utils import draw_acc_loss
 from utils import accuracy_calc
-from models import resnet
+from models.backbones import resnet
 from torch.utils.data import DataLoader
 import torchvision.transforms as transforms
 import torch.optim as optim
