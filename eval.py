@@ -1,6 +1,6 @@
 import torch
 import torch.nn as nn
-from data import *
+from datasets import *
 import argparse
 from utils.vocapi_evaluator import VOCAPIEvaluator
 

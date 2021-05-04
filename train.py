@@ -9,7 +9,7 @@ import torch
 import torch.optim as optim
 import torch.backends.cudnn as cudnn
 
-from data import *
+from datasets import *
 from utils import gt_creator
 
 from utils.augmentations import SSDAugmentation

@@ -8,7 +8,7 @@ import torch
 import torch.nn as nn
 import torch.backends.cudnn as cudnn
 from torch.autograd import Variable
-from data import VOCDataset
+from datasets import VOCDataset
 import sys
 import os
 import time

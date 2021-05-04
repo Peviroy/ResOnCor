@@ -3,10 +3,9 @@ import argparse
 import torch
 import torch.nn as nn
 import torch.backends.cudnn as cudnn
-from data import *
+from datasets import *
 import numpy as np
 import cv2
-import tools
 import time
 
 parser = argparse.ArgumentParser(description='YOLO Detection')
