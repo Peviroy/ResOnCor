@@ -43,7 +43,7 @@ class myYOLO(nn.Module):
             center_x of box on pic = (grid_x + t_x) * stride
         """
         w, h = (input_size, input_size)
-        w, h = w / self.stride, h / self.stride
+        w, h = w // self.stride, h // self.stride
         grid_x, grid_y = torch.meshgrid(torch.arange(w), torch.arange(h))
         # stack in the final dim
         grid_xy = torch.stack([grid_x, grid_y], dim=-1).float()
@@ -60,15 +60,15 @@ class myYOLO(nn.Module):
         """Convert pred{tx ty tw th} to bbox on input image{xmin, ymin, xmax, ymax}
         """
         # center_x = (grid_x + t_x) * stride; width = exp(t_w)
-        pred[:, :, :2] = (self.grid_cell + torch.sigmoid(pred[:, :, 2])) * self.stride
+        pred[:, :, :2] = (self.grid_cell + torch.sigmoid(pred[:, :, :2])) * self.stride
         pred[:, :, 2:] = torch.exp(pred[:, :, 2:])
 
         out_pred = torch.zeros_like(pred)
         # x_min/max = center_x -/+ width/2
         out_pred[:, :, 0] = pred[:, :, 0] - pred[:, :, 2] / 2
         out_pred[:, :, 1] = pred[:, :, 1] - pred[:, :, 3] / 2
-        out_pred[:, :, 2] = pred[:, :, 2] + pred[:, :, 2] / 2
-        out_pred[:, :, 3] = pred[:, :, 3] + pred[:, :, 3] / 2
+        out_pred[:, :, 2] = pred[:, :, 0] + pred[:, :, 2] / 2
+        out_pred[:, :, 3] = pred[:, :, 1] + pred[:, :, 3] / 2
 
         return out_pred
 
@@ -112,7 +112,7 @@ class myYOLO(nn.Module):
         """
         # Get the most possilble class pred in each grid
         class_idx = np.argmax(prob_pred, axis=1)
-        prob_pred = prob_pred[(np.arange(prob_pred.shape[0]), class_idx)].copy()
+        prob_pred = prob_pred[(np.arange(prob_pred.shape[0]), class_idx)]
 
         # filter out preds with low score
         pred_keep = np.where(prob_pred >= self.conf_thresh)
@@ -120,14 +120,14 @@ class myYOLO(nn.Module):
         prob_pred = prob_pred[pred_keep]
         class_idx = class_idx[pred_keep]
 
-        keep = np.zeros(len(prob_pred), dtype=np.int)
+        keep = np.zeros(len(bbox_pred), dtype=np.int)
         for i in range(self.num_classes):
             idxs = np.where(class_idx == i)[0]
             if len(idxs) == 0:
                 continue
             cls_bboxes = bbox_pred[idxs]
             cls_scores = prob_pred[idxs]
-            cls_keep = self.nms(cls_bboxes, cls_scores)
+            cls_keep = self._nms(cls_bboxes, cls_scores)
             keep[idxs[cls_keep]] = 1
 
         keep = np.where(keep > 0)
@@ -146,7 +146,7 @@ class myYOLO(nn.Module):
         # Reshape pred
         B, C, H, W = pred.size()
         # [B, C, H, W] -> [B, H, W, C] -> [B, H*W, C]
-        pred.permute(0, 2, 3, 1).contiguous().view(B, H * W, C)
+        pred = pred.permute(0, 2, 3, 1).contiguous().view(B, H * W, C)
         # objectness confedence: [B, H*W, 1]
         conf_pred = pred[:, :, :1]
         # class prediction: [B, H*W, num_classes]
@@ -170,6 +170,6 @@ class myYOLO(nn.Module):
                 class_scores = class_scores.to('cpu').numpy()
                 bbox_pred = bbox_pred.to('cpu').numpy()
 
-                bboxes, class_scores, class_idx = self.postprocess(bbox_pred, class_scores)
+                bboxes, class_scores, class_idx = self._postprocess(bbox_pred, class_scores)
 
                 return bboxes, class_scores, class_idx
