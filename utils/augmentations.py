@@ -218,7 +218,7 @@ class RandomSampleCrop(object):
     def __init__(self):
         self.sample_options = (
             # using entire original input image
-            None,
+            (1.0, 1.0),
             # sample a patch s.t. MIN jaccard w/ obj in .1,.3,.4,.7,.9
             (0.1, None),
             (0.3, None),
@@ -227,13 +227,16 @@ class RandomSampleCrop(object):
             # randomly sample a patch
             (None, None),
         )
+        self.sample_options = np.array(self.sample_options)
 
     def __call__(self, image, boxes=None, labels=None):
         height, width, _ = image.shape
         while True:
             # randomly choose a mode
-            mode = random.choice(self.sample_options)
-            if mode is None:
+            #mode = random.choice(self.sample_options)
+            mode = self.sample_options[random.choice(self.sample_options.shape[0], 1,
+                                                     replace=False)][0]
+            if tuple(mode) == (1.0, 1.0):
                 return image, boxes, labels
 
             min_iou, max_iou = mode
