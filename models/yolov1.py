@@ -3,7 +3,7 @@ import torch
 import torch.nn as nn
 
 from .backbones import resnet
-from nn import SpatialPyramidPool2d, Conv2d
+from nn import SpatialPyramidPool2d, Conv2d, loss
 
 
 class myYOLO(nn.Module):
@@ -155,7 +155,12 @@ class myYOLO(nn.Module):
         bbox_pred = pred[:, :, 1 + self.num_classes:]
 
         if self.trainable:
-            pass
+            conf_loss, cls_loss, bbox_loss, total_loss = loss(pred_conf=conf_pred,
+                                                              pred_cls=class_pred,
+                                                              pred_txtytwth=bbox_pred,
+                                                              label=target)
+
+            return conf_loss, cls_loss, bbox_loss, total_loss
         else:
             with torch.no_grad():
                 conf_pred = torch.sigmoid(conf_pred)[0] # 0 is because that these is only 1 batch.
@@ -168,4 +173,3 @@ class myYOLO(nn.Module):
                 bboxes, class_scores, class_idx = self.postprocess(bbox_pred, class_scores)
 
                 return bboxes, class_scores, class_idx
-        pass
