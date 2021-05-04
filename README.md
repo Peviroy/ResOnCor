@@ -4,13 +4,15 @@
   <h3 align="center">ResOnCor</h3>
 
   <p align="center">
-    Resnet implement on Corel-10 dataset
+    Under refactoring
     <br />
     <a href="https://github.com/Peviroy/ResOnCor"><strong>Explore the docs »</strong></a>
     <br />
 
 
 </p>
+
+> This repo is under refactoring, this README was written for resnet implementation on Corel-1000 dataset, find it on CorelDataset branch
 
 ## Table of Contents
 
