@@ -201,5 +201,17 @@ def resnet(name: str, pretrained=False):
         raise ValueError(f'No such model!\n\t{name.lower()}')
     model = models[name]()
     if pretrained:
-        model.load_state_dict(model_zoo.load_url(model_urls[name.lower()]))
+        model.load_state_dict(model_zoo.load_url(model_urls[name.lower()]), strict=False)
     return model
+
+
+if __name__ == '__main__':
+    import torch
+    import torch.cuda
+    device = torch.device('cuda') if torch.cuda.is_available() else torch.device('cpu')
+    model = resnet('resnet18', pretrained=True).to(device)
+
+    input = torch.randn(1, 3, 512, 512).to(device)
+    output = model(input)
+    print(output.shape)
+    assert list(output.shape) == [1, 512, 16, 16]

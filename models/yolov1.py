@@ -24,7 +24,7 @@ class myYOLO(nn.Module):
         self.grid_cell = self._create_grid(input_size)
         self.input_size = input_size
 
-        self.backbone = resnet('resnet18')
+        self.backbone = resnet('resnet18', pretrained=True)
         backbones_out_channels = 512
 
         self.neck = SpatialPyramidPool2d(in_channels=backbones_out_channels,
