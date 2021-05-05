@@ -157,10 +157,10 @@ class ResNet(nn.Module):
         out = self.relu(self.bn1(out))
         out_1 = self.maxpool(out)
 
-        out_2 = self.layer1(out)
-        out_3 = self.layer2(out)
-        out_4 = self.layer3(out)
-        out_5 = self.layer4(out)
+        out_2 = self.layer1(out_1)
+        out_3 = self.layer2(out_2)
+        out_4 = self.layer3(out_3)
+        out_5 = self.layer4(out_4)
 
         return out_3, out_4, out_5
 

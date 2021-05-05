@@ -75,13 +75,13 @@ def train():
     if args.multi_scale and args.version == 'yolo':
         print('Use the multi-scale trick ...')
         train_size = 640
-        val_size = cfg['min_dim']['yolo']
+        val_size = cfg['min_dim']['yolo'][0]
     elif args.version == 'yolo':
-        train_size = cfg['min_dim']['yolo']
-        val_size = cfg['min_dim']['yolo']
+        train_size = cfg['min_dim']['yolo'][0]
+        val_size = cfg['min_dim']['yolo'][0]
     else: # fcos
-        train_size = cfg['min_dim']['fcos']
-        val_size = cfg['min_dim']['fcos']
+        train_size = cfg['min_dim']['fcos'][0]
+        val_size = cfg['min_dim']['fcos'][0]
 
     # dataset and evaluator
     print("Setting Arguments.. : ", args)
@@ -122,7 +122,7 @@ def train():
     elif args.version == 'fcos':
         from models.tinyfcos import FCOS
         model = FCOS(device, input_size=train_size, num_classes=num_classes, trainable=True)
-        print('Let us train yolo on the %s dataset ......' % (args.dataset))
+        print('Let us train fcos on the %s dataset ......' % (args.dataset))
     else:
         print('We only support yolo and fcos for now.')
         exit()

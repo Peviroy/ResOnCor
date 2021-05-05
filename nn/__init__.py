@@ -1,2 +1,2 @@
 from .modules import *
-from .loss import loss, fcos_loss
+from .loss import yolo_loss, fcos_loss

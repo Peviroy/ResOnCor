@@ -24,7 +24,7 @@ class FCOS(nn.Module):
 
         self.stride = [8, 16, 32, 64]
         self.scale_thresholds = [0, 49, 98, 196, 1e10]
-        self.pixel_location = self.set_grid()
+        self.pixel_location = self.set_grid(input_size)
         self.scale = np.array([[input_size[1], input_size[0], input_size[1], input_size[0]]])
         self.scale_torch = torch.tensor(self.scale.copy()).float()
 
@@ -231,10 +231,10 @@ class FPN(nn.Module):
         P5_up = self.upsamplelike([P5, C4], self.conv_1x1_5)
 
         P4 = torch.cat([C4, P5_up], dim=1)
-        P4 = self.conv_set_4(C4)
-        P4_up = self.upsamplelike([P4, C3], self.conv_1x1_5)
+        P4 = self.conv_set_4(P4)
+        P4_up = self.upsamplelike([P4, C3], self.conv_1x1_4)
 
         P3 = torch.cat([C3, P4_up], dim=1)
-        P3 = self.conv_set_3(C3)
+        P3 = self.conv_set_3(P3)
 
         return [P3, P4, P5, P6]

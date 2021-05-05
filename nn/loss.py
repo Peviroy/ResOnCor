@@ -2,7 +2,7 @@ import torch
 import numpy as np
 import torch.nn as nn
 import torch.nn.functional as F
-from ..utils import compute_iou
+from utils import compute_iou
 
 
 class MSELoss(nn.Module):

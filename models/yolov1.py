@@ -3,7 +3,7 @@ import torch
 import torch.nn as nn
 
 from .backbones import resnet
-from nn import SpatialPyramidPool2d, Conv2d, loss
+from nn import SpatialPyramidPool2d, Conv2d, yolo_loss
 
 
 class myYOLO(nn.Module):
@@ -155,10 +155,10 @@ class myYOLO(nn.Module):
         bbox_pred = pred[:, :, 1 + self.num_classes:]
 
         if self.trainable:
-            conf_loss, cls_loss, bbox_loss, total_loss = loss(pred_conf=conf_pred,
-                                                              pred_cls=class_pred,
-                                                              pred_txtytwth=bbox_pred,
-                                                              label=targets)
+            conf_loss, cls_loss, bbox_loss, total_loss = yolo_loss(pred_conf=conf_pred,
+                                                                   pred_cls=class_pred,
+                                                                   pred_txtytwth=bbox_pred,
+                                                                   label=targets)
 
             return conf_loss, cls_loss, bbox_loss, total_loss
         else:
