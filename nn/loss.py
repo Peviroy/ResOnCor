@@ -42,7 +42,7 @@ class BCE_focal_loss(nn.Module):
         return loss
 
 
-def loss(pred_conf, pred_cls, pred_txtytwth, label):
+def yolo_loss(pred_conf, pred_cls, pred_txtytwth, label):
     # create loss_f
     conf_loss_function = MSELoss(reduction='mean')
     cls_loss_function = nn.CrossEntropyLoss(reduction='none')

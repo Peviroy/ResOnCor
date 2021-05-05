@@ -7,7 +7,7 @@ from .backbones import resnet
 from nn import Conv2d, fcos_loss
 
 
-class myYOLO(nn.Module):
+class FCOS(nn.Module):
     def __init__(self,
                  device,
                  input_size=None,
@@ -15,7 +15,7 @@ class myYOLO(nn.Module):
                  trainable=False,
                  conf_thresh=0.01,
                  nms_thresh=0.5):
-        super(myYOLO, self).__init__()
+        super(FCOS, self).__init__()
         self.device = device
         self.num_classes = num_classes
         self.trainable = trainable
@@ -24,7 +24,7 @@ class myYOLO(nn.Module):
 
         self.stride = [8, 16, 32, 64]
         self.scale_thresholds = [0, 49, 98, 196, 1e10]
-        self.pixel_location = self.set_init()
+        self.pixel_location = self.set_grid()
         self.scale = np.array([[input_size[1], input_size[0], input_size[1], input_size[0]]])
         self.scale_torch = torch.tensor(self.scale.copy()).float()
 
@@ -48,35 +48,42 @@ class myYOLO(nn.Module):
         Implemention:
             center_x of box on pic = (grid_x + t_x) * stride
         """
-        w, h = (input_size, input_size)
-        w, h = w // self.stride, h // self.stride
-        grid_x, grid_y = torch.meshgrid(torch.arange(w), torch.arange(h))
-        # stack in the final dim
-        grid_xy = torch.stack([grid_x, grid_y], dim=-1).float()
-        # reshape from [W, H, 2] to [1, W*H, 2]
-        grid_xy = grid_xy.view(1, -1, 2)
+        grid_length = sum([(input_size[0] // s) * (input_size[1] // s) for s in self.stride])
+        grid_xy = torch.zeros(grid_length, 4)
+        start_idx = 0
 
+        for idx in range(len(self.stride)):
+            s = self.stride[idx]
+            w, h = input_size[0] // s, input_size[1] // s
+            for y in range(h):
+                for x in range(w):
+                    x_y = y * w + x
+                    index = x_y + start_idx
+                    xx = x * s + s // 2
+                    yy = y * s + s // 2
+                    grid_xy[index, :] = torch.tensor([xx, yy, xx, yy]).float()
+            start_idx += w * h
         return grid_xy.to(self.device)
 
     def set_grid(self, input_size):
         self.input_size = input_size
         self.grid_cell = self._create_grid(input_size)
 
-    def _decode_boxes(self, pred):
-        """Convert pred{tx ty tw th} to bbox on input image{xmin, ymin, xmax, ymax}
+    def _clip_boxes(self, boxes, im_shape):
         """
-        # center_x = (grid_x + t_x) * stride; width = exp(t_w)
-        pred[:, :, :2] = (self.grid_cell + torch.sigmoid(pred[:, :, :2])) * self.stride
-        pred[:, :, 2:] = torch.exp(pred[:, :, 2:])
-
-        out_pred = torch.zeros_like(pred)
-        # x_min/max = center_x -/+ width/2
-        out_pred[:, :, 0] = pred[:, :, 0] - pred[:, :, 2] / 2
-        out_pred[:, :, 1] = pred[:, :, 1] - pred[:, :, 3] / 2
-        out_pred[:, :, 2] = pred[:, :, 0] + pred[:, :, 2] / 2
-        out_pred[:, :, 3] = pred[:, :, 1] + pred[:, :, 3] / 2
-
-        return out_pred
+        Clip boxes to image boundaries.
+        """
+        if boxes.shape[0] == 0:
+            return boxes
+        # assert x1 >= 0
+        boxes[:, 0::4] = np.maximum(np.minimum(boxes[:, 0::4], im_shape[1] - 1), 0)
+        # y1 >= 0
+        boxes[:, 1::4] = np.maximum(np.minimum(boxes[:, 1::4], im_shape[0] - 1), 0)
+        # x2 < im_shape[1]
+        boxes[:, 2::4] = np.maximum(np.minimum(boxes[:, 2::4], im_shape[1] - 1), 0)
+        # y2 < im_shape[0]
+        boxes[:, 3::4] = np.maximum(np.minimum(boxes[:, 3::4], im_shape[0] - 1), 0)
+        return boxes
 
     def _nms(self, dets, scores):
         # From faster rcnn nms
@@ -163,8 +170,23 @@ class myYOLO(nn.Module):
             return cls_loss, ctn_loss, box_loss, total_loss
         else:
             with torch.no_grad():
-                print('No done yet')
-                pass
+                # batch size = 1
+                # Be careful, the index 0 in all_cls is background !!
+                all_class_pred = torch.sigmoid(total_pred[0, :, 1:1 + self.num_classes])
+                all_centerness = torch.sigmoid(total_pred[0, :, 1 + self.num_classes:1 +
+                                                          self.num_classes + 1])
+                all_bbox_pred = torch.exp(total_pred[
+                    0, :, 1 + self.num_classes + 1:]) * self.location_weight + self.pixel_location
+                # separate box pred and class conf
+                all_class_pred = all_class_pred.to('cpu').numpy()
+                all_centerness = all_centerness.to('cpu').numpy()
+                all_bbox_pred = all_bbox_pred.to('cpu').numpy()
+
+                bboxes, scores, cls_inds = self._postprocess(all_bbox_pred, all_class_pred)
+                # clip the boxes
+                bboxes = self._clip_boxes(bboxes, self.input_size) / self.scale
+
+                return bboxes, scores, cls_inds
 
 
 class FPN(nn.Module):

@@ -1,2 +1,2 @@
 from .modules import *
-from .loss import loss
+from .loss import loss, fcos_loss

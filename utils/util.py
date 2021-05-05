@@ -35,7 +35,7 @@ def generate_dxdywh(gt_label, w, h, s):
     return grid_x, grid_y, tx, ty, tw, th, weight
 
 
-def gt_creator(input_size, stride, label_lists=[]):
+def yolo_gt_creator(input_size, stride, label_lists=[]):
     # prepare the all empty gt datas
     batch_size = len(label_lists)
     w = input_size
@@ -63,6 +63,73 @@ def gt_creator(input_size, stride, label_lists=[]):
 
     gt_tensor = gt_tensor.reshape(batch_size, -1, 1 + 1 + 4 + 1)
 
+    return torch.from_numpy(gt_tensor).float()
+
+
+def fcos_gt_creator(input_size, num_classes, stride, scale_thresholds, label_lists=[], name='VOC'):
+    batch_size = len(label_lists)
+    w = input_size[1]
+    h = input_size[0]
+    total = sum([(h // s) * (w // s) for s in stride])
+
+    # 1 + num_classes = background + class label number
+    # 1 = center-ness
+    # 4 = l, t, r, b
+    # 1 = positive sample
+    # 1 = iou
+    gt_tensor = np.zeros([batch_size, total, 1 + num_classes + 1 + 4 + 1 + 1])
+    gt_tensor[:, :, 0] = 1.0
+
+    # generate gt datas
+    for batch_index in range(batch_size):
+        for gt_box in label_lists[batch_index]:
+            gt_class = gt_box[-1]
+            xmin, ymin, xmax, ymax = gt_box[:-1]
+            xmin *= w
+            ymin *= h
+            xmax *= w
+            ymax *= h
+            # check whether it is a dirty data
+            if xmax - xmin < 1e-28 or ymax - ymin < 1e-28:
+                print("find a dirty data !!!")
+                continue
+
+            start_index = 0
+            for scale_index, s in enumerate(stride):
+                #print(start_index)
+                # get a feature map size corresponding the scale
+                ws = w // s
+                hs = h // s
+                for ys in range(hs):
+                    for xs in range(ws):
+                        # map the location (xs, ys) in f_mp to corresponding location (x, y) in the origin image
+                        x = xs * s + s // 2
+                        y = ys * s + s // 2
+                        if x >= xmin and x <= xmax and y >= ymin and y <= ymax:
+                            l = x - xmin
+                            t = y - ymin
+                            r = xmax - x
+                            b = ymax - y
+                            # select a appropriate scale for gt dat
+                            M = max(l, t, r, b)
+
+                            if M >= scale_thresholds[scale_index] and M < scale_thresholds[
+                                    scale_index + 1]:
+                                index = (ys * ws + xs) + start_index
+                                center_ness = np.sqrt(
+                                    (min(l, r) / max(l, r)) * (min(t, b) / max(t, b)))
+                                # To avoid multi class label, we first clear up all potential class labels
+                                gt_tensor[batch_index,
+                                          index, :1 + num_classes] = np.zeros(1 + num_classes)
+                                # then give a new class label
+                                gt_tensor[batch_index, index, 1 + int(gt_class)] = 1.0
+                                gt_tensor[batch_index, index, 1 + num_classes] = center_ness
+                                gt_tensor[batch_index, index,
+                                          1 + num_classes + 1:-2] = np.array([l, t, r, b])
+                                gt_tensor[batch_index, index, -2] = 1.0
+                                gt_tensor[batch_index, index, -1] = 1.0
+                                # print("lalla: ", gt_tensor[batch_index, :, index])
+                start_index += ws * hs
     return torch.from_numpy(gt_tensor).float()
 
 
