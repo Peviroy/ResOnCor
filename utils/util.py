@@ -66,6 +66,27 @@ def gt_creator(input_size, stride, label_lists=[]):
     return torch.from_numpy(gt_tensor).float()
 
 
+def compute_iou(pred_box, gt_box):
+    # calculate IoU
+    # [l, t, r, b]
+
+    w_gt = gt_box[:, :, 0] + gt_box[:, :, 2]
+    h_gt = gt_box[:, :, 1] + gt_box[:, :, 3]
+    w_pred = pred_box[:, :, 0] + pred_box[:, :, 2]
+    h_pred = pred_box[:, :, 1] + pred_box[:, :, 3]
+    S_gt = w_gt * h_gt
+    S_pred = w_pred * h_pred
+    I_h = torch.min(gt_box[:, :, 1], pred_box[:, :, 1]) + torch.min(gt_box[:, :, 3], pred_box[:, :,
+                                                                                              3])
+    I_w = torch.min(gt_box[:, :, 0], pred_box[:, :, 0]) + torch.min(gt_box[:, :, 2], pred_box[:, :,
+                                                                                              2])
+    S_I = I_h * I_w
+    U = S_gt + S_pred - S_I + 1e-20
+    IoU = S_I / U
+
+    return IoU
+
+
 def get_image_paths(directory: str) -> list:
     '''
     Description: 
