@@ -21,10 +21,10 @@ class FCOS(nn.Module):
         self.trainable = trainable
         self.conf_thresh = conf_thresh
         self.nms_thresh = nms_thresh
-
+        self.location_weight = torch.tensor([[-1, -1, 1, 1]]).float().to(device)
         self.stride = [8, 16, 32, 64]
         self.scale_thresholds = [0, 49, 98, 196, 1e10]
-        self.pixel_location = self.set_grid(input_size)
+        self.grid_cell = self._create_grid(input_size)
         self.scale = np.array([[input_size[1], input_size[0], input_size[1], input_size[0]]])
         self.scale_torch = torch.tensor(self.scale.copy()).float()
 
@@ -43,18 +43,13 @@ class FCOS(nn.Module):
                                     nn.Conv2d(128, 1 + self.num_classes + 1 + 4, 1))
 
     def _create_grid(self, input_size):
-        """Prepare matrix with shape [1, W*H, 2], each element corresponds to [grid_x, grid_y]
-
-        Implemention:
-            center_x of box on pic = (grid_x + t_x) * stride
-        """
         grid_length = sum([(input_size[0] // s) * (input_size[1] // s) for s in self.stride])
         grid_xy = torch.zeros(grid_length, 4)
         start_idx = 0
 
         for idx in range(len(self.stride)):
             s = self.stride[idx]
-            w, h = input_size[0] // s, input_size[1] // s
+            w, h = input_size[1] // s, input_size[0] // s
             for y in range(h):
                 for x in range(w):
                     x_y = y * w + x
@@ -175,8 +170,8 @@ class FCOS(nn.Module):
                 all_class_pred = torch.sigmoid(total_pred[0, :, 1:1 + self.num_classes])
                 all_centerness = torch.sigmoid(total_pred[0, :, 1 + self.num_classes:1 +
                                                           self.num_classes + 1])
-                all_bbox_pred = torch.exp(total_pred[
-                    0, :, 1 + self.num_classes + 1:]) * self.location_weight + self.pixel_location
+                all_bbox_pred = torch.exp(total_pred[0, :, 1 + self.num_classes +
+                                                     1:]) * self.location_weight + self.grid_cell
                 # separate box pred and class conf
                 all_class_pred = all_class_pred.to('cpu').numpy()
                 all_centerness = all_centerness.to('cpu').numpy()
