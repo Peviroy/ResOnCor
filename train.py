@@ -77,11 +77,11 @@ def train():
         train_size = 640
         val_size = cfg['min_dim']['yolo'][0]
     elif args.version == 'yolo':
-        train_size = cfg['min_dim']['yolo'][0]
-        val_size = cfg['min_dim']['yolo'][0]
+        train_size = cfg['min_dim']['yolo']
+        val_size = cfg['min_dim']['yolo']
     else: # fcos
-        train_size = cfg['min_dim']['fcos'][0]
-        val_size = cfg['min_dim']['fcos'][0]
+        train_size = cfg['min_dim']['fcos']
+        val_size = cfg['min_dim']['fcos']
 
     # dataset and evaluator
     print("Setting Arguments.. : ", args)
@@ -199,7 +199,7 @@ def train():
                                           label_lists=targets)
             else: # fcos
                 targets = fcos_gt_creator(input_size=train_size,
-                                          num_classes=args.num_classes,
+                                          num_classes=num_classes,
                                           stride=model.stride,
                                           scale_thresholds=model.scale_thresholds,
                                           label_lists=targets)
@@ -245,10 +245,10 @@ def train():
                         flush=True)
                 else:
                     print(
-                        '[Epoch: %d/%d][Iter: %d/%d][cls: %.4f][ctn: %.4f][box: %.4f][loss: %.4f][lr: %.6f][size: %d][time: %.6f]'
+                        '[Epoch: %d/%d][Iter: %d/%d][cls: %.4f][ctn: %.4f][box: %.4f][loss: %.4f][lr: %.6f][size: (%d, %d)][time: %.2f]'
                         % (epoch, cfg['max_epoch'], iter_i, epoch_size, cls_loss.item(),
-                           ctn_loss.item(), bbox_loss.item(), total_loss.item(), tmp_lr, train_size,
-                           t1 - t0),
+                           ctn_loss.item(), bbox_loss.item(), total_loss.item(), tmp_lr,
+                           train_size[0], train_size[1], t1 - t0),
                         flush=True)
 
                 t0 = time.time()
