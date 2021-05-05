@@ -10,6 +10,7 @@ def setup_seed(seed):
     torch.manual_seed(seed)
     torch.cuda.manual_seed_all(seed)
     torch.backends.cudnn.deterministic = True
+    np.random.seed(seed)
 
 
 def accuracy_calc(output, target, topk=(1, )):

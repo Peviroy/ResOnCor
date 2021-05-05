@@ -10,10 +10,12 @@ import torch.optim as optim
 import torch.backends.cudnn as cudnn
 
 from datasets import *
-from utils import gt_creator
+from utils import setup_seed, yolo_gt_creator, fcos_gt_creator
 
 from utils.augmentations import SSDAugmentation
 from utils.vocapi_evaluator import VOCAPIEvaluator
+
+setup_seed(41724138)
 
 
 def parse_args():
@@ -57,6 +59,7 @@ def parse_args():
 def train():
     args = parse_args()
 
+    cfg = train_cfg
     path_to_save = os.path.join(args.save_folder, args.dataset, args.version)
     os.makedirs(path_to_save, exist_ok=True)
 
@@ -69,15 +72,17 @@ def train():
         device = torch.device("cpu")
 
     # multi-scale
-    if args.multi_scale:
+    if args.multi_scale and args.version == 'yolo':
         print('Use the multi-scale trick ...')
         train_size = 640
-        val_size = 416
-    else:
-        train_size = 416
-        val_size = 416
+        val_size = cfg['min_dim']['yolo']
+    elif args.version == 'yolo':
+        train_size = cfg['min_dim']['yolo']
+        val_size = cfg['min_dim']['yolo']
+    else: # fcos
+        train_size = cfg['min_dim']['fcos']
+        val_size = cfg['min_dim']['fcos']
 
-    cfg = train_cfg
     # dataset and evaluator
     print("Setting Arguments.. : ", args)
     print("----------------------------------------------------------")
@@ -111,14 +116,17 @@ def train():
     # build model
     if args.version == 'yolo':
         from models.yolov1 import myYOLO
-        yolo_net = myYOLO(device, input_size=train_size, num_classes=num_classes, trainable=True)
+        model = myYOLO(device, input_size=train_size, num_classes=num_classes, trainable=True)
         print('Let us train yolo on the %s dataset ......' % (args.dataset))
 
+    elif args.version == 'fcos':
+        from models.tinyfcos import FCOS
+        model = FCOS(device, input_size=train_size, num_classes=num_classes, trainable=True)
+        print('Let us train yolo on the %s dataset ......' % (args.dataset))
     else:
-        print('We only support yolo for now.')
+        print('We only support yolo and fcos for now.')
         exit()
 
-    model = yolo_net
     model.to(device).train()
 
     # use tfboard
@@ -143,12 +151,12 @@ def train():
                           lr=args.lr,
                           momentum=args.momentum,
                           weight_decay=args.weight_decay)
-
     max_epoch = cfg['max_epoch']
     epoch_size = len(dataset) // args.batch_size
 
     # start training loop
     t0 = time.time()
+    global_iteration = 0
 
     for epoch in range(args.start_epoch, max_epoch):
 
@@ -158,6 +166,7 @@ def train():
             set_lr(optimizer, tmp_lr)
 
         for iter_i, (images, targets) in enumerate(dataloader):
+            global_iteration += 1
             # WarmUp strategy for learning rate
             if not args.no_warm_up:
                 if epoch < args.wp_epoch:
@@ -171,11 +180,11 @@ def train():
                     set_lr(optimizer, tmp_lr)
 
             # multi-scale trick
-            if iter_i % 10 == 0 and iter_i > 0 and args.multi_scale:
-                # randomly choose a new size
-                train_size = random.randint(10, 19) * 32
-                model.set_grid(train_size)
             if args.multi_scale:
+                if iter_i % 10 == 0 and iter_i > 0:
+                    # randomly choose a new size
+                    train_size = random.randint(10, 19) * 32
+                    model.set_grid(train_size)
                 # interpolate
                 images = torch.nn.functional.interpolate(images,
                                                          size=train_size,
@@ -184,14 +193,26 @@ def train():
 
             # make train label
             targets = [label.tolist() for label in targets]
-            targets = gt_creator(input_size=train_size, stride=yolo_net.stride, label_lists=targets)
+            if args.version == 'yolo':
+                targets = yolo_gt_creator(input_size=train_size,
+                                          stride=model.stride,
+                                          label_lists=targets)
+            else: # fcos
+                targets = fcos_gt_creator(input_size=train_size,
+                                          num_classes=args.num_classes,
+                                          stride=model.stride,
+                                          scale_thresholds=model.scale_thresholds,
+                                          label_lists=targets)
 
             # to device
             images = images.to(device)
             targets = targets.to(device)
 
             # forward and loss
-            conf_loss, cls_loss, bbox_loss, total_loss = model(images, target=targets)
+            if args.version == 'yolo':
+                conf_loss, cls_loss, bbox_loss, total_loss = model(images, targets=targets)
+            else: # fcos
+                cls_loss, ctn_loss, bbox_loss, total_loss = model(images, targets=targets)
 
             # backprop
             total_loss.backward()
@@ -200,19 +221,35 @@ def train():
 
             # display
             if iter_i % 10 == 0:
+                t1 = time.time()
                 if args.tfboard:
                     # viz loss
-                    writer.add_scalar('obj loss', conf_loss.item(), iter_i + epoch * epoch_size)
-                    writer.add_scalar('cls loss', cls_loss.item(), iter_i + epoch * epoch_size)
-                    writer.add_scalar('box loss', bbox_loss.item(), iter_i + epoch * epoch_size)
+                    if args.version == 'yolo':
+                        writer.add_scalar('obj loss', conf_loss.item(), global_iteration)
+                        writer.add_scalar('cls loss', cls_loss.item(), global_iteration)
+                        writer.add_scalar('box loss', bbox_loss.item(), global_iteration)
+                        writer.add_scalar('total loss', total_loss.item(), global_iteration)
+                    else: # fcos
+                        writer.add_scalar('cls loss', cls_loss.item(), global_iteration)
+                        writer.add_scalar('ctn loss', ctn_loss.item(), global_iteration)
+                        writer.add_scalar('box loss', bbox_loss.item(), global_iteration)
+                        writer.add_scalar('total loss', total_loss.item(), global_iteration)
 
-                t1 = time.time()
-                print(
-                    '[Epoch %d/%d][Iter %d/%d][lr %.6f]'
-                    '[Loss: obj %.2f || cls %.2f || bbox %.2f || total %.2f || size %d || time: %.2f]'
-                    % (epoch + 1, max_epoch, iter_i, epoch_size, tmp_lr, conf_loss.item(),
-                       cls_loss.item(), bbox_loss.item(), total_loss.item(), train_size, t1 - t0),
-                    flush=True)
+                if args.version == 'yolo':
+                    print(
+                        '[Epoch %d/%d][Iter %d/%d][lr %.6f]'
+                        '[Loss: obj %.2f || cls %.2f || bbox %.2f || total %.2f || size %d || time: %.2f]'
+                        %
+                        (epoch + 1, max_epoch, iter_i, epoch_size, tmp_lr, conf_loss.item(),
+                         cls_loss.item(), bbox_loss.item(), total_loss.item(), train_size, t1 - t0),
+                        flush=True)
+                else:
+                    print(
+                        '[Epoch: %d/%d][Iter: %d/%d][cls: %.4f][ctn: %.4f][box: %.4f][loss: %.4f][lr: %.6f][size: %d][time: %.6f]'
+                        % (epoch, cfg['max_epoch'], iter_i, epoch_size, cls_loss.item(),
+                           ctn_loss.item(), bbox_loss.item(), total_loss.item(), tmp_lr, train_size,
+                           t1 - t0),
+                        flush=True)
 
                 t0 = time.time()
 

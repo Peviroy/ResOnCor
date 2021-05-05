@@ -4,7 +4,14 @@ import torch
 import cv2
 import numpy as np
 
-train_cfg = {'lr_epoch': (90, 120), 'max_epoch': 150, 'min_dim': [416, 416]}
+train_cfg = {
+    'lr_epoch': (90, 120),
+    'max_epoch': 150,
+    'min_dim': {
+        'yolo': [416, 416],
+        'fcos': [320, 320]
+    }
+}
 
 
 def detection_collate(batch):
