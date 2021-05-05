@@ -35,19 +35,33 @@ def detection_collate(batch):
     return torch.stack(imgs, 0), targets
 
 
-def base_transform(image, size, mean, std):
-    x = cv2.resize(image, (size, size)).astype(np.float32)
-    x /= 255.
-    x -= mean
-    x /= std
-    return x
-
-
-class BaseTransform:
+class YOLOBaseTransform:
     def __init__(self, size, mean=(0.406, 0.456, 0.485), std=(0.225, 0.224, 0.229)):
         self.size = size
         self.mean = np.array(mean, dtype=np.float32)
         self.std = np.array(std, dtype=np.float32)
 
+    def transform(self, image, size, mean, std):
+        x = cv2.resize(image, (size, size)).astype(np.float32)
+        x /= 255.
+        x -= mean
+        x /= std
+        return x
+
     def __call__(self, image, boxes=None, labels=None):
-        return base_transform(image, self.size, self.mean, self.std), boxes, labels
+        return self.transform(image, self.size, self.mean, self.std), boxes, labels
+
+
+class FCOSBaseTransform:
+    def __init__(self, size, mean=(104, 117, 123)):
+        self.size = size
+        self.mean = np.array(mean, dtype=np.float32)
+
+    def transform(self, image, size, mean):
+        x = cv2.resize(image, (size[1], size[0])).astype(np.float32)
+        x -= mean
+        x = x.astype(np.float32)
+        return x
+
+    def __call__(self, image, boxes=None, labels=None):
+        return self.transform(image, self.size, self.mean), boxes, labels

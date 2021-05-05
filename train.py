@@ -12,7 +12,6 @@ import torch.backends.cudnn as cudnn
 from datasets import *
 from utils import setup_seed, yolo_gt_creator, fcos_gt_creator
 
-from utils.augmentations import SSDAugmentation
 from utils.vocapi_evaluator import VOCAPIEvaluator
 
 setup_seed(41724138)
@@ -90,13 +89,25 @@ def train():
 
     if args.dataset == 'voc':
         num_classes = 20
-        dataset = VOCDataset(root=VOC_ROOT, transform=SSDAugmentation(train_size))
+        if args.version == 'yolo':
+            from utils.yolo_aug import YOLOAugmentation
+            dataset = VOCDataset(root=VOC_ROOT, transform=YOLOAugmentation(train_size))
+        else:
+            from utils.fcos_aug import FCOSAugmentation
+            dataset = VOCDataset(root=VOC_ROOT, transform=FCOSAugmentation(train_size))
 
-        evaluator = VOCAPIEvaluator(data_root=VOC_ROOT,
-                                    img_size=val_size,
-                                    device=device,
-                                    transform=BaseTransform(val_size),
-                                    labelmap=VOC_CLASSES)
+        if args.version == 'yolo':
+            evaluator = VOCAPIEvaluator(data_root=VOC_ROOT,
+                                        img_size=val_size,
+                                        device=device,
+                                        transform=YOLOBaseTransform(val_size),
+                                        labelmap=VOC_CLASSES)
+        else:
+            evaluator = VOCAPIEvaluator(data_root=VOC_ROOT,
+                                        img_size=val_size,
+                                        device=device,
+                                        transform=FCOSBaseTransform(val_size),
+                                        labelmap=VOC_CLASSES)
     else:
         print('unknow dataset !! Only support voc and coco !!')
         exit(0)
