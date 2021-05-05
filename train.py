@@ -60,9 +60,9 @@ def train():
     path_to_save = os.path.join(args.save_folder, args.dataset, args.version)
     os.makedirs(path_to_save, exist_ok=True)
 
-    # cuda
-    if args.cuda:
-        print('use cuda')
+    # device
+    if args.cuda and torch.cuda.is_available():
+        print('Use gpu')
         cudnn.benchmark = True
         device = torch.device("cuda")
     else:
@@ -70,7 +70,7 @@ def train():
 
     # multi-scale
     if args.multi_scale:
-        print('use the multi-scale trick ...')
+        print('Use the multi-scale trick ...')
         train_size = 640
         val_size = 416
     else:
@@ -84,11 +84,10 @@ def train():
     print('Loading the dataset...')
 
     if args.dataset == 'voc':
-        data_dir = VOC_ROOT
         num_classes = 20
-        dataset = VOCDataset(root=data_dir, transform=SSDAugmentation(train_size))
+        dataset = VOCDataset(root=VOC_ROOT, transform=SSDAugmentation(train_size))
 
-        evaluator = VOCAPIEvaluator(data_root=data_dir,
+        evaluator = VOCAPIEvaluator(data_root=VOC_ROOT,
                                     img_size=val_size,
                                     device=device,
                                     transform=BaseTransform(val_size),
@@ -116,7 +115,7 @@ def train():
         print('Let us train yolo on the %s dataset ......' % (args.dataset))
 
     else:
-        print('We only support YOLO !!!')
+        print('We only support yolo for now.')
         exit()
 
     model = yolo_net

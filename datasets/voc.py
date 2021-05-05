@@ -13,12 +13,10 @@ import torch
 import torch.utils.data as data
 import xml.etree.ElementTree as ET
 
-VOC_CLASSES = ( # always index 0
-    'aeroplane', 'bicycle', 'bird', 'boat', 'bottle', 'bus', 'car', 'cat', 'chair', 'cow',
-    'diningtable', 'dog', 'horse', 'motorbike', 'person', 'pottedplant', 'sheep', 'sofa', 'train',
-    'tvmonitor')
+VOC_CLASSES = ('aeroplane', 'bicycle', 'bird', 'boat', 'bottle', 'bus', 'car', 'cat', 'chair',
+               'cow', 'diningtable', 'dog', 'horse', 'motorbike', 'person', 'pottedplant', 'sheep',
+               'sofa', 'train', 'tvmonitor')
 
-# VOC数据集的目录，以下是笔者的目录。读者请根据自己的电脑来进行修改
 current_file_path = os.path.abspath(os.path.dirname(__file__))
 VOC_ROOT = "../data/VOC/"
 VOC_ROOT = os.path.join(current_file_path, VOC_ROOT)

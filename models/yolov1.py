@@ -24,7 +24,7 @@ class myYOLO(nn.Module):
         self.grid_cell = self._create_grid(input_size)
         self.input_size = input_size
 
-        self.backbone = resnet('resnet18', pretrained=True)
+        self.backbone = resnet('resnet18', pretrained=trainable)
         backbones_out_channels = 512
 
         self.neck = SpatialPyramidPool2d(in_channels=backbones_out_channels,
@@ -137,8 +137,8 @@ class myYOLO(nn.Module):
 
         return bbox_pred, prob_pred, class_idx
 
-    def forward(self, x, target=None):
-        backbone_out = self.backbone(x)
+    def forward(self, x, targets=None):
+        _, _, backbone_out = self.backbone(x)
         neck_out = self.neck(backbone_out)
         det_out = self.head(neck_out)
         pred = self.pred(det_out)
@@ -158,7 +158,7 @@ class myYOLO(nn.Module):
             conf_loss, cls_loss, bbox_loss, total_loss = loss(pred_conf=conf_pred,
                                                               pred_cls=class_pred,
                                                               pred_txtytwth=bbox_pred,
-                                                              label=target)
+                                                              label=targets)
 
             return conf_loss, cls_loss, bbox_loss, total_loss
         else:
