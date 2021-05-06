@@ -44,8 +44,8 @@ def visualize(img,
                               class_colors[int(cls_indx)], 1)
                 cv2.rectangle(img, (int(xmin), int(abs(ymin) - 20)), (int(xmax), int(ymin)),
                               class_colors[int(cls_indx)], -1)
-                mess = '%s' % (class_names[int(cls_indx)])
-                cv2.putText(img, mess, (int(xmin), int(ymin - 5)), cv2.FONT_HERSHEY_SIMPLEX, 0.5,
+                message = '%s' % (class_names[int(cls_indx)])
+                cv2.putText(img, message, (int(xmin), int(ymin - 5)), cv2.FONT_HERSHEY_SIMPLEX, 0.5,
                             (0, 0, 0), 1)
 
     elif dataset == 'coco-val' and class_indexs is not None:
@@ -60,8 +60,8 @@ def visualize(img,
                 cls_id = class_indexs[int(cls_indx)]
                 cls_name = class_names[cls_id]
                 # mess = '%s: %.3f' % (cls_name, scores[i])
-                mess = '%s' % (cls_name)
-                cv2.putText(img, mess, (int(xmin), int(ymin - 5)), cv2.FONT_HERSHEY_SIMPLEX, 0.5,
+                message = '%s' % (cls_name)
+                cv2.putText(img, message, (int(xmin), int(ymin - 5)), cv2.FONT_HERSHEY_SIMPLEX, 0.5,
                             (0, 0, 0), 1)
 
     return img
@@ -80,33 +80,35 @@ def test(net,
     for index in range(num_images):
         print('Testing image {:d}/{:d}....'.format(index + 1, num_images))
         img, _ = testset.pull_image(index)
-        h, w, _ = img.shape
 
-        # to tensor
+        # transform
         x = torch.from_numpy(transform(img)[0][:, :, (2, 1, 0)]).permute(2, 0, 1)
         x = x.unsqueeze(0).to(device)
 
-        t0 = time.time()
         # forward
-        bboxes, scores, cls_inds = net(x)
-        print("detection time used ", time.time() - t0, "s")
+        t_start = time.time()
+        bbox_pred, scores, cls_inds = net(x)
+        print(f"Detection time used {time.time() - t_start:.4f}s")
 
         # scale each detection back up to the image
-        scale = np.array([[w, h, w, h]])
-        # map the boxes to origin image scale
-        bboxes *= scale
+        H, W, _ = img.shape
+        scale = np.array([[W, H, W, H]])
+        bbox_pred *= scale # map the boxes to origin image scale
 
-        img_processed = vis(img, bboxes, scores, cls_inds, thresh, class_colors, class_names,
-                            class_indexs, dataset)
-        cv2.imshow('detection', img_processed)
-        cv2.waitKey(0)
-        # print('Saving the' + str(index) + '-th image ...')
-        # cv2.imwrite('test_images/' + args.dataset+ '3/' + str(index).zfill(6) +'.jpg', img)
+        img_processed = visualize(img, bbox_pred, scores, cls_inds, thresh, class_colors,
+                                  class_names, class_indexs, dataset)
+        #cv2.imshow('detection', img_processed)
+        #cv2.waitKey(0)
+        print('Saving the' + str(index) + '-th image ...')
+
+        SAVING_DIR = 'test_images/' + args.dataset + '/'
+        if not os.path.exists(SAVING_DIR):
+            os.mkdir(SAVING_DIR)
+        cv2.imwrite(SAVING_DIR + str(index).zfill(6) + '.jpg', img)
 
 
 if __name__ == '__main__':
-    # get device
-    if args.cuda:
+    if args.cuda and torch.cuda.is_available():
         print('use cuda')
         cudnn.benchmark = True
         device = torch.device("cuda")
@@ -116,38 +118,53 @@ if __name__ == '__main__':
     input_size = args.input_size
 
     # dataset
-    print('test on voc ...')
-    class_names = VOC_CLASSES
-    class_indexs = None
-    num_classes = 20
-    dataset = VOCDataset(root=VOC_ROOT,
-                         img_size=input_size,
-                         image_sets=[('2007', 'test')],
-                         transform=None)
-
-    class_colors = [(np.random.randint(255), np.random.randint(255), np.random.randint(255))
-                    for _ in range(num_classes)]
+    if args.dataset == 'voc':
+        print('Test on voc ...')
+        CLASS_NAMES = VOC_CLASSES
+        CLASS_INDEXS = None
+        NUM_CLASSES = 20
+        CLASS_COLORS = [(np.random.randint(255), np.random.randint(255), np.random.randint(255))
+                        for _ in range(NUM_CLASSES)]
+        testset = VOCDataset(root=VOC_ROOT, image_sets=[('2007', 'test')], transform=None)
+    else:
+        print('Unknow dataset. Only voc now')
+        exit(0)
 
     # build model
+    model_cfg = train_cfg
     if args.version == 'yolo':
         from models.yolov1 import myYOLO
-        net = myYOLO(device, input_size=input_size, num_classes=num_classes, trainable=False)
-
+        model = myYOLO(device,
+                       input_size=model_cfg['min_dim']['yolo'][0],
+                       num_classes=NUM_CLASSES,
+                       trainable=False)
+        # Get transform
+        from datasets import YOLOBaseTransform as BaseTransform
+        transform = BaseTransform(model_cfg['min_dim']['yolo'][0])
+    elif args.version == 'fcos':
+        from models.tinyfcos import FCOS
+        model = FCOS(device,
+                     input_size=model_cfg['min_dim']['fcos'],
+                     num_classes=NUM_CLASSES,
+                     trainable=False)
+        from datasets import FCOSBaseTransform as BaseTransform
+        transform = BaseTransform(model_cfg['min_dim']['fcos'])
     else:
-        print('Unknown Version !!!')
+        print('We only support yolo and fcos for now.')
         exit()
 
-    net.load_state_dict(torch.load(args.trained_model, map_location=device))
-    net.to(device).eval()
+    model.load_state_dict(torch.load(args.trained_model, map_location=device))
+    model.eval()
+    model = model.to(device)
     print('Finished loading model!')
 
     # evaluation
-    test(net=net,
+    test(net=model,
          device=device,
-         testset=dataset,
-         transform=BaseTransform(input_size),
+         testset=testset,
+         transform=transform,
          thresh=args.visual_threshold,
-         class_colors=class_colors,
-         class_names=class_names,
-         class_indexs=class_indexs,
+         class_colors=CLASS_COLORS,
+         class_names=CLASS_NAMES,
+         class_indexs=CLASS_INDEXS,
          dataset=args.dataset)

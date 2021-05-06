@@ -17,54 +17,68 @@ parser.add_argument('--cuda', action='store_true', default=False, help='Use cuda
 args = parser.parse_args()
 
 
-def voc_test(model, device, input_size):
-    evaluator = VOCAPIEvaluator(data_root=VOC_ROOT,
-                                img_size=input_size,
-                                device=device,
-                                transform=BaseTransform(input_size),
-                                labelmap=VOC_CLASSES,
-                                display=True)
-
-    # VOC evaluation
+def evaluate(model, device, input_size, transform, dataset):
+    if dataset == 'voc':
+        evaluator = VOCAPIEvaluator(data_root=VOC_ROOT,
+                                    img_size=input_size,
+                                    device=device,
+                                    transform=transform,
+                                    labelmap=VOC_CLASSES,
+                                    display=True)
+    else:
+        print('Unknow dataset. Only voc now')
+        exit(0)
     evaluator.evaluate(model)
 
 
 if __name__ == '__main__':
-    # dataset
-    if args.dataset == 'voc':
-        print('eval on voc ...')
-        num_classes = 20
-    else:
-        print('unknow dataset !! we only support voc, coco-val, coco-test !!!')
-        exit(0)
-
-    # cuda
-    if args.cuda:
+    if args.cuda and torch.cuda.is_available():
         print('use cuda')
         torch.backends.cudnn.benchmark = True
         device = torch.device("cuda")
     else:
         device = torch.device("cpu")
 
+    # dataset
+    if args.dataset == 'voc':
+        print('Eval on voc ...')
+        NUM_CLASSES = 20
+    else:
+        print('Unknow dataset. Only voc now')
+        exit(0)
+
     # input size
     input_size = args.input_size
 
     # build model
+    model_cfg = train_cfg
     if args.version == 'yolo':
         from models.yolov1 import myYOLO
-        net = myYOLO(device, input_size=input_size, num_classes=num_classes, trainable=False)
-
+        model = myYOLO(device,
+                       input_size=model_cfg['min_dim']['yolo'][0],
+                       num_classes=NUM_CLASSES,
+                       trainable=False)
+        # Get transform
+        from datasets import YOLOBaseTransform as BaseTransform
+        transform = BaseTransform(model_cfg['min_dim']['yolo'][0])
+    elif args.version == 'fcos':
+        from models.tinyfcos import FCOS
+        model = FCOS(device,
+                     input_size=model_cfg['min_dim']['fcos'],
+                     num_classes=NUM_CLASSES,
+                     trainable=False)
+        from datasets import FCOSBaseTransform as BaseTransform
+        transform = BaseTransform(model_cfg['min_dim']['fcos'])
     else:
-        print('Unknown Version !!!')
+        print('We only support yolo and fcos for now.')
         exit()
 
     # load net
-    net.load_state_dict(torch.load(args.trained_model, map_location='cuda'))
-    net.eval()
+    model.load_state_dict(torch.load(args.trained_model, map_location=device))
+    model.eval()
     print('Finished loading model!')
-    net = net.to(device)
+    model = model.to(device)
 
     # evaluation
     with torch.no_grad():
-        if args.dataset == 'voc':
-            voc_test(net, device, input_size)
+        evaluate(model, device, input_size, transform, args.dataset)
