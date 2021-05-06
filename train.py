@@ -76,8 +76,8 @@ def train():
         train_size = 640
         val_size = cfg['min_dim']['yolo'][0]
     elif args.version == 'yolo':
-        train_size = cfg['min_dim']['yolo']
-        val_size = cfg['min_dim']['yolo']
+        train_size = cfg['min_dim']['yolo'][0]
+        val_size = cfg['min_dim']['yolo'][0]
     else: # fcos
         train_size = cfg['min_dim']['fcos']
         val_size = cfg['min_dim']['fcos']
