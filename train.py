@@ -18,8 +18,8 @@ setup_seed(41724138)
 
 
 def parse_args():
-    parser = argparse.ArgumentParser(description='YOLO Detection')
-    parser.add_argument('-v', '--version', default='yolo', help='yolo')
+    parser = argparse.ArgumentParser(description='Detection zoon')
+    parser.add_argument('-v', '--version', default='yolo', help='Support:yolo, fcos')
     parser.add_argument('-d', '--dataset', default='voc', help='voc or coco')
     parser.add_argument('-ms',
                         '--multi_scale',
@@ -109,7 +109,7 @@ def train():
                                         transform=FCOSBaseTransform(val_size),
                                         labelmap=VOC_CLASSES)
     else:
-        print('unknow dataset !! Only support voc and coco !!')
+        print('Unknow dataset. Only voc now')
         exit(0)
 
     print('Training model on:', dataset.name)

@@ -1,15 +1,14 @@
-import os
 import argparse
 import torch
-import torch.nn as nn
 import torch.backends.cudnn as cudnn
 from datasets import *
 import numpy as np
 import cv2
+import os
 import time
 
-parser = argparse.ArgumentParser(description='YOLO Detection')
-parser.add_argument('-v', '--version', default='yolo', help='yolo')
+parser = argparse.ArgumentParser(description='Detection zoon')
+parser.add_argument('-v', '--version', default='yolo', help='Support:yolo, fcos')
 parser.add_argument('-d', '--dataset', default='voc', help='voc, coco-val.')
 parser.add_argument('-size', '--input_size', default=416, type=int, help='input_size')
 parser.add_argument('--trained_model',
@@ -27,15 +26,15 @@ parser.add_argument('--cuda', action='store_true', default=False, help='use cuda
 args = parser.parse_args()
 
 
-def vis(img,
-        bboxes,
-        scores,
-        cls_inds,
-        thresh,
-        class_colors,
-        class_names,
-        class_indexs=None,
-        dataset='voc'):
+def visualize(img,
+              bboxes,
+              scores,
+              cls_inds,
+              thresh,
+              class_colors,
+              class_names,
+              class_indexs=None,
+              dataset='voc'):
     if dataset == 'voc':
         for i, box in enumerate(bboxes):
             cls_indx = cls_inds[i]
@@ -77,7 +76,7 @@ def test(net,
          class_names=None,
          class_indexs=None,
          dataset='voc'):
-    num_images = len(testset)
+    num_images = len(testset) # no dataloader for single image processing
     for index in range(num_images):
         print('Testing image {:d}/{:d}....'.format(index + 1, num_images))
         img, _ = testset.pull_image(index)

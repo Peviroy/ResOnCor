@@ -4,12 +4,12 @@ from datasets import *
 import argparse
 from utils.vocapi_evaluator import VOCAPIEvaluator
 
-parser = argparse.ArgumentParser(description='YOLO Detector Evaluation')
-parser.add_argument('-v', '--version', default='yolo', help='yolo.')
+parser = argparse.ArgumentParser(description='Detection zoon')
+parser.add_argument('-v', '--version', default='yolo', help='Support:yolo, fcos')
 parser.add_argument('-d', '--dataset', default='voc', help='voc, coco-val, coco-test.')
 parser.add_argument('--trained_model',
                     type=str,
-                    default='weights_yolo_v2/yolo_v2_72.2.pth',
+                    default='weights/final.pth',
                     help='Trained state_dict file path to open')
 parser.add_argument('-size', '--input_size', default=416, type=int, help='input_size')
 parser.add_argument('--cuda', action='store_true', default=False, help='Use cuda')

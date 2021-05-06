@@ -21,6 +21,7 @@ class FCOS(nn.Module):
         self.trainable = trainable
         self.conf_thresh = conf_thresh
         self.nms_thresh = nms_thresh
+        self.input_size = input_size
         self.location_weight = torch.tensor([[-1, -1, 1, 1]]).float().to(device)
         self.stride = [8, 16, 32, 64]
         self.scale_thresholds = [0, 49, 98, 196, 1e10]
